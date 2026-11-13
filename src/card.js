@@ -53,7 +53,7 @@
     ".hero {",
     "  position: relative;",
     "  overflow: hidden;",
-    "  min-height: 270px;",
+    "  min-height: 136px;",
     "  display: flex;",
     "  border-radius: var(--ha-card-border-radius, 28px);",
     "  background: linear-gradient(135deg, color-mix(in srgb, var(--b1) 14%, var(--surface)), color-mix(in srgb, var(--b2) 8%, var(--surface)));",
@@ -84,8 +84,8 @@
     ".wglow.on { opacity: 1; }",
     ".fx-hero { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }",
     ".hero-body {",
-    "  position: relative; z-index: 2; padding: clamp(22px, 3vw, 34px);",
-    "  display: flex; flex-direction: column; justify-content: center; gap: 4px; width: 100%;",
+    "  position: relative; z-index: 2; padding: 14px 18px;",
+    "  display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; width: 100%;",
     "}",
     ".hero-tag {",
     "  position: absolute; z-index: 3; right: 16px; top: 14px;",
@@ -98,17 +98,17 @@
     ".hero-tag:hover { transform: translateY(-2px); background: rgba(8,10,30,.62); }",
     ".hero-tag ha-icon { --mdc-icon-size: 1rem; display: inline-flex; }",
     ".eyebrow {",
-    "  margin: 0; font-size: .74rem; font-weight: 800; letter-spacing: .14em;",
+    "  margin: 0; font-size: .68rem; font-weight: 800; letter-spacing: .14em;",
     "  text-transform: uppercase; color: var(--faint);",
     "}",
     ".greet {",
-    "  margin: 2px 0 0; font-family: var(--font-display); font-weight: 600;",
-    "  font-size: clamp(1.1rem, 2.2vw, 1.5rem); letter-spacing: -.02em; color: var(--text);",
+    "  margin: 1px 0 0; font-family: var(--font-display); font-weight: 600;",
+    "  font-size: clamp(.95rem, 1.5vw, 1.15rem); letter-spacing: -.02em; color: var(--text);",
     "}",
     ".clock {",
     "  font-family: var(--font-display); font-weight: 800; line-height: 1; letter-spacing: -.05em;",
-    "  font-variant-numeric: tabular-nums; font-size: clamp(3.4rem, 8.5vw, 6.2rem);",
-    "  margin: 4px 0 8px;",
+    "  font-variant-numeric: tabular-nums; font-size: clamp(2rem, 4.5vw, 3rem);",
+    "  margin: 1px 0 4px;",
     "  background: linear-gradient(110deg, var(--text) 10%, var(--acc-text) 55%, var(--a2) 100%);",
     "  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;",
     "  filter: drop-shadow(0 6px 24px color-mix(in srgb, var(--a1) 35%, transparent));",
@@ -116,10 +116,10 @@
     ".clock .colon { animation: blink 1s steps(1) infinite; }",
     ".clock .ampm { font-size: .32em; letter-spacing: .02em; margin-left: .18em; vertical-align: baseline; }",
     "@keyframes blink { 50% { opacity: .25; } }",
-    ".hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }",
+    ".hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }",
     ".chip {",
-    "  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px;",
-    "  border-radius: 99px; font-size: .82rem; font-weight: 600; color: var(--dim);",
+    "  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px;",
+    "  border-radius: 99px; font-size: .75rem; font-weight: 600; color: var(--dim);",
     "  background: color-mix(in srgb, var(--bg) 45%, transparent);",
     "  border: 1px solid var(--border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);",
     "  transition: transform .3s var(--spring), border-color .2s, background .2s;",
@@ -155,11 +155,9 @@
     ".pop-btn ha-icon { --mdc-icon-size: 1rem; flex: none; color: var(--acc-text); }",
     ".pop-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
     "@container (max-width: 560px) {",
-    "  .hero { min-height: 390px; }",
-    "  .hero-art { height: auto; width: 100%; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 42%); mask-image: linear-gradient(180deg, transparent 0%, #000 42%); }",
-    "  .hero-body { padding-bottom: 180px; justify-content: flex-start; }",
-    "  .hero-tag { top: auto; bottom: 12px; }",
-    "  .pop { top: auto; bottom: 52px; }",
+    "  .hero-art { height: auto; width: 100%; -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); }",
+    "  .hero-tag { top: 10px; right: 12px; padding: 4px 10px; font-size: .7rem; }",
+    "  .pop { top: 44px; right: 12px; }",
     "}"
   ].join("\n");
 
@@ -373,10 +371,10 @@
 
     get hass() { return this._hass; }
 
-    getCardSize() { return 4; }
+    getCardSize() { return 3; }
 
     getLayoutOptions() {
-      return { grid_columns: 12, grid_min_columns: 6, grid_rows: 4, grid_min_rows: 3 };
+      return { grid_columns: 12, grid_min_columns: 6, grid_rows: 3, grid_min_rows: 2 };
     }
 
     static getStubConfig() {
@@ -791,6 +789,11 @@
   /* --------------------------------------------------------------------------
      Visual Config Editor
      -------------------------------------------------------------------------- */
+  function esc(v) {
+    return String(v === undefined || v === null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   class AuroraGlassBannerCardEditor extends HTMLElement {
     constructor() {
       super();
@@ -805,7 +808,9 @@
     }
 
     set hass(h) {
+      var hadHass = !!this._hass;
       this._hass = h;
+      if (!hadHass && h) this._render();
     }
 
     _emit(patch) {
@@ -817,43 +822,121 @@
       }));
     }
 
+    _badgesList() {
+      var raw = Array.isArray(this._config.badges) ? this._config.badges : [];
+      return raw.map(function (b) {
+        return typeof b === "string" ? { entity: b } : Object.assign({}, b);
+      });
+    }
+
+    _updateBadges(list) {
+      var cleaned = list.map(function (b) {
+        var out = {};
+        if (b.entity) out.entity = b.entity;
+        if (b.name) out.name = b.name;
+        if (b.attribute) out.attribute = b.attribute;
+        if (b.icon) out.icon = b.icon;
+        if (b.show_name === false) out.show_name = false;
+        if (b.tap_action && b.tap_action.action && b.tap_action.action !== "more-info") {
+          out.tap_action = b.tap_action;
+        }
+        return out;
+      });
+      this._emit({ badges: cleaned });
+      this._render();
+    }
+
     _render() {
       var c = this._config;
+      var entityIds = this._hass && this._hass.states ? Object.keys(this._hass.states).sort() : [];
+      var weatherIds = entityIds.filter(function (id) { return id.indexOf("weather.") === 0; });
+      var allList = entityIds.map(function (id) { return '<option value="' + esc(id) + '">'; }).join("");
+      var weatherList = weatherIds.map(function (id) { return '<option value="' + esc(id) + '">'; }).join("");
+
       var worlds = Object.keys(window.AMB.W).map(function (id) {
-        return '<option value="' + id + '"' + (normWorld(c.world) === id ? " selected" : "") + ">" + window.AMB.W[id].name + " (" + id + ")</option>";
+        return '<option value="' + id + '"' + (normWorld(c.world) === id ? " selected" : "") + ">" + esc(window.AMB.W[id].name) + " (" + id + ")</option>";
       }).join("");
       var fxs = ['<option value="auto"' + ((c.effect || "auto") === "auto" ? " selected" : "") + ">Auto (from weather_entity)</option>",
-        '<option value="none"' + (c.effect === "none" ? " selected" : "") + ">None</option>"
+      '<option value="none"' + (c.effect === "none" ? " selected" : "") + ">None</option>"
       ].concat(Object.keys(window.FX.E).map(function (id) {
-        return '<option value="' + id + '"' + (normFx(c.effect) === id ? " selected" : "") + ">" + window.FX.E[id].name + " (" + id + ")</option>";
+        return '<option value="' + id + '"' + (normFx(c.effect) === id ? " selected" : "") + ">" + esc(window.FX.E[id].name) + " (" + id + ")</option>";
       })).join("");
+
+      var badges = this._badgesList();
+      var badgesHtml = badges.map(function (b, idx) {
+        var act = (b.tap_action && b.tap_action.action) || "more-info";
+        var navPath = (b.tap_action && b.tap_action.navigation_path) || "";
+        return [
+          '<div class="b-card" data-idx="' + idx + '">',
+          '  <div class="b-head">',
+          '    <span>Badge #' + (idx + 1) + (b.name ? " · " + esc(b.name) : b.entity ? " · " + esc(b.entity) : "") + "</span>",
+          '    <div class="b-acts">',
+          '      <button type="button" class="ib" data-act="up" title="Move up"' + (idx === 0 ? " disabled" : "") + ">▲</button>",
+          '      <button type="button" class="ib" data-act="down" title="Move down"' + (idx === badges.length - 1 ? " disabled" : "") + ">▼</button>",
+          '      <button type="button" class="ib del" data-act="del" title="Remove">✕</button>',
+          "    </div>",
+          "  </div>",
+          '  <div class="b-grid">',
+          '    <div class="row"><label>Entity</label><input type="text" list="ha-entities" data-bf="entity" placeholder="sensor.temperature" value="' + esc(b.entity) + '"></div>',
+          '    <div class="row"><label>Label (optional)</label><input type="text" data-bf="name" placeholder="Outside" value="' + esc(b.name) + '"></div>',
+          '    <div class="row"><label>Attribute (optional)</label><input type="text" data-bf="attribute" placeholder="temperature" value="' + esc(b.attribute) + '"></div>',
+          '    <div class="row"><label>Icon (optional)</label><input type="text" data-bf="icon" placeholder="mdi:thermometer" value="' + esc(b.icon) + '"></div>',
+          '    <div class="row"><label>Tap Action</label><select data-bf="tap_action">',
+          '      <option value="more-info"' + (act === "more-info" ? " selected" : "") + ">More info</option>",
+          '      <option value="toggle"' + (act === "toggle" ? " selected" : "") + ">Toggle</option>",
+          '      <option value="navigate"' + (act === "navigate" ? " selected" : "") + ">Navigate</option>",
+          '      <option value="none"' + (act === "none" ? " selected" : "") + ">None</option>",
+          "    </select></div>",
+          act === "navigate" ? '<div class="row"><label>Navigation Path</label><input type="text" data-bf="nav_path" placeholder="/lovelace/energy" value="' + esc(navPath) + '"></div>' : "",
+          "  </div>",
+          "</div>"
+        ].join("");
+      }).join("");
 
       this._root.innerHTML = [
         "<style>",
         "  .ed { display: grid; gap: 12px; padding: 8px 0; font-family: inherit; }",
         "  .row { display: grid; gap: 4px; }",
+        "  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }",
         "  label { font-size: 12px; font-weight: 600; opacity: .8; }",
-        "  input[type=text], select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--divider-color, #444); background: var(--card-background-color, transparent); color: inherit; font: inherit; }",
-        "  .checks { display: flex; flex-wrap: wrap; gap: 14px; padding-top: 4px; }",
+        "  input[type=text], select { width: 100%; box-sizing: border-box; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--divider-color, #444); background: var(--card-background-color, transparent); color: inherit; font: inherit; font-size: 13px; }",
+        "  .checks { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 2px; }",
         "  .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }",
-        "  .hint { font-size: 12px; opacity: .7; margin: 0; }",
+        "  .sec-head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--divider-color, #333); }",
+        "  .sec-head b { font-size: 13px; }",
+        "  .add-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary-color, #7c5cff); background: transparent; color: var(--primary-color, #7c5cff); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }",
+        "  .b-list { display: grid; gap: 10px; }",
+        "  .b-card { padding: 10px; border-radius: 10px; border: 1px solid var(--divider-color, #444); display: grid; gap: 8px; }",
+        "  .b-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; }",
+        "  .b-acts { display: flex; gap: 4px; }",
+        "  .ib { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--divider-color, #444); background: transparent; color: inherit; cursor: pointer; font-size: 11px; }",
+        "  .ib:disabled { opacity: .35; cursor: default; }",
+        "  .ib.del { color: #fb7185; }",
+        "  .b-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }",
         "</style>",
+        '<datalist id="ha-entities">' + allList + "</datalist>",
+        '<datalist id="ha-weather">' + weatherList + "</datalist>",
         '<div class="ed">',
-        '  <div class="row"><label>World</label><select data-k="world">' + worlds + "</select></div>",
-        '  <div class="row"><label>Weather / Atmosphere Effect</label><select data-k="effect">' + fxs + "</select></div>",
-        '  <div class="row"><label>Weather Entity (optional, for Auto effect)</label><input type="text" data-k="weather_entity" placeholder="weather.home" value="' + (c.weather_entity || "") + '"></div>',
-        '  <div class="row"><label>Theme</label><select data-k="theme">' +
-        '    <option value="auto"' + ((c.theme || "auto") === "auto" ? " selected" : "") + ">Auto</option>" +
-        '    <option value="dark"' + (c.theme === "dark" ? " selected" : "") + ">Dark</option>" +
-        '    <option value="light"' + (c.theme === "light" ? " selected" : "") + ">Light</option></select></div>",
-        '  <div class="row"><label>Name override (optional)</label><input type="text" data-k="name" placeholder="Uses HA user name by default" value="' + (c.name || "") + '"></div>',
+        '  <div class="two">',
+        '    <div class="row"><label>World</label><select data-k="world">' + worlds + "</select></div>",
+        '    <div class="row"><label>Weather / Effect</label><select data-k="effect">' + fxs + "</select></div>",
+        "  </div>",
+        '  <div class="two">',
+        '    <div class="row"><label>Weather Entity (for Auto)</label><input type="text" list="ha-weather" data-k="weather_entity" placeholder="weather.home" value="' + esc(c.weather_entity) + '"></div>',
+        '    <div class="row"><label>Theme</label><select data-k="theme">' +
+        '      <option value="auto"' + ((c.theme || "auto") === "auto" ? " selected" : "") + ">Auto</option>" +
+        '      <option value="dark"' + (c.theme === "dark" ? " selected" : "") + ">Dark</option>" +
+        '      <option value="light"' + (c.theme === "light" ? " selected" : "") + '>Light</option></select></div>',
+        "  </div>",
+        '  <div class="row"><label>Name override (optional)</label><input type="text" data-k="name" placeholder="Uses HA user name by default" value="' + esc(c.name) + '"></div>',
         '  <div class="checks">',
         '    <label class="chk"><input type="checkbox" data-b="show_clock"' + (c.show_clock !== false ? " checked" : "") + "> Show clock</label>",
         '    <label class="chk"><input type="checkbox" data-b="show_date"' + (c.show_date !== false ? " checked" : "") + "> Show date</label>",
-        '    <label class="chk"><input type="checkbox" data-b="show_world_tag"' + (c.show_world_tag !== false ? " checked" : "") + "> Show world picker tag</label>",
+        '    <label class="chk"><input type="checkbox" data-b="show_world_tag"' + (c.show_world_tag !== false ? " checked" : "") + "> Show world tag</label>",
         '    <label class="chk"><input type="checkbox" data-b="hour_24"' + (c.hour_24 !== false ? " checked" : "") + "> 24-hour clock</label>",
         "  </div>",
-        '  <p class="hint">Configure <code>badges</code> in the YAML editor (supports entity strings or objects with entity, name, icon, attribute, tap_action).</p>',
+        '  <div class="sec-head"><b>Badges (' + badges.length + ')</b><button type="button" class="add-btn" id="add-badge">+ Add badge</button></div>',
+        '  <div class="b-list">' + badgesHtml + "</div>",
         "</div>"
       ].join("");
 
@@ -872,6 +955,44 @@
           var patch = {};
           patch[k] = el.checked;
           self._emit(patch);
+        });
+      });
+      this._root.querySelector("#add-badge").addEventListener("click", function () {
+        var list = self._badgesList();
+        list.push({ entity: "" });
+        self._updateBadges(list);
+      });
+      this._root.querySelectorAll(".b-card").forEach(function (cardEl) {
+        var idx = parseInt(cardEl.getAttribute("data-idx"), 10);
+        cardEl.querySelectorAll("[data-act]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var act = btn.getAttribute("data-act");
+            var list = self._badgesList();
+            if (act === "del") {
+              list.splice(idx, 1);
+            } else if (act === "up" && idx > 0) {
+              var tmp = list[idx - 1]; list[idx - 1] = list[idx]; list[idx] = tmp;
+            } else if (act === "down" && idx < list.length - 1) {
+              var tmp2 = list[idx + 1]; list[idx + 1] = list[idx]; list[idx] = tmp2;
+            }
+            self._updateBadges(list);
+          });
+        });
+        cardEl.querySelectorAll("[data-bf]").forEach(function (inp) {
+          inp.addEventListener("change", function () {
+            var f = inp.getAttribute("data-bf");
+            var list = self._badgesList();
+            var item = list[idx];
+            if (f === "tap_action") {
+              item.tap_action = inp.value === "more-info" ? undefined : { action: inp.value };
+              if (inp.value === "navigate") item.tap_action.navigation_path = "";
+            } else if (f === "nav_path") {
+              item.tap_action = { action: "navigate", navigation_path: inp.value };
+            } else {
+              item[f] = inp.value;
+            }
+            self._updateBadges(list);
+          });
         });
       });
     }

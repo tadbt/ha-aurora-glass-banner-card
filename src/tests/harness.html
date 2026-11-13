@@ -3,12 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aurora Glass Banner Card — Test Harness</title>
+<title>Aurora Glass Banner Card — YAML Test Harness</title>
 <style>
-  html, body { margin: 0; min-height: 100%; background: #0b1020; font-family: system-ui, sans-serif; color: #fff; }
-  .wrap { max-width: 960px; margin: 32px auto; padding: 0 16px; display: grid; gap: 20px; }
+  html, body { margin: 0; min-height: 100%; background: #0b1020; font-family: system-ui, sans-serif; color: #e2e8f0; }
+  .wrap { max-width: 960px; margin: 28px auto; padding: 0 16px; display: grid; gap: 18px; }
   .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  button { padding: 6px 12px; border-radius: 8px; border: 1px solid #334; background: #182038; color: #fff; cursor: pointer; }
+  button { padding: 7px 14px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; cursor: pointer; font-weight: 600; }
+  button:hover { border-color: #7c5cff; }
+  .yaml-box { display: grid; gap: 8px; }
+  .yaml-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #94a3b8; }
+  textarea {
+    width: 100%; min-height: 260px; padding: 14px; border-radius: 14px;
+    border: 1px solid #334155; background: #0f172a; color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5;
+    box-sizing: border-box; resize: vertical;
+  }
+  .err { color: #fb7185; font-size: 13px; min-height: 18px; }
 </style>
 </head>
 <body>
@@ -16,11 +26,115 @@
   <div class="bar">
     <button id="toggle-theme" type="button">Toggle Light/Dark</button>
     <button id="toggle-rain" type="button">Toggle Rain</button>
+    <button id="apply-yaml" type="button">Apply YAML</button>
   </div>
+
   <aurora-glass-banner-card id="card"></aurora-glass-banner-card>
+
+  <div class="yaml-box">
+    <div class="yaml-head">
+      <span>Home Assistant Card YAML</span>
+      <span>Edit and click <b>Apply YAML</b></span>
+    </div>
+    <textarea id="yaml-input" spellcheck="false">type: custom:aurora-glass-banner-card
+world: casetta
+effect: auto
+weather_entity: weather.home
+theme: auto
+show_date: true
+show_clock: true
+show_world_tag: true
+hour_24: true
+badges:
+  - entity: weather.home
+    attribute: temperature
+    name: Outside
+  - entity: sensor.house_power
+    name: Power
+  - entity: binary_sensor.living_motion
+    name: Motion
+  - binary_sensor.front_door
+  - entity: light.living_room
+    tap_action:
+      action: toggle</textarea>
+    <div class="err" id="yaml-err"></div>
+  </div>
 </div>
+
 <script src="../../aurora-glass-banner-card.js"></script>
 <script>
+  // Minimal YAML parser for HA card config (supports maps, lists, booleans, numbers, strings)
+  function parseYaml(src) {
+    var lines = src.replace(/\r\n/g, "\n").split("\n").map(function (raw, idx) {
+      var clean = raw.replace(/\s+#.*$/, "");
+      return { indent: clean.search(/\S/), text: clean.trim(), line: idx + 1 };
+    }).filter(function (l) { return l.text && l.text[0] !== "#"; });
+
+    function scalar(v) {
+      if (v === "true") return true;
+      if (v === "false") return false;
+      if (v === "null" || v === "~") return null;
+      if (/^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+      if ((v[0] === '"' && v[v.length - 1] === '"') || (v[0] === "'" && v[v.length - 1] === "'")) return v.slice(1, -1);
+      return v;
+    }
+
+    var i = 0;
+    function parseBlock(minIndent) {
+      if (i >= lines.length) return {};
+      if (lines[i].text.indexOf("- ") === 0 || lines[i].text === "-") {
+        var arr = [];
+        var listIndent = lines[i].indent;
+        while (i < lines.length && lines[i].indent === listIndent && (lines[i].text.indexOf("- ") === 0 || lines[i].text === "-")) {
+          var rest = lines[i].text.slice(1).trim();
+          i++;
+          if (!rest) {
+            arr.push(parseBlock(listIndent + 1));
+          } else if (rest.indexOf(":") > 0) {
+            var ci = rest.indexOf(":");
+            var k = rest.slice(0, ci).trim(), v = rest.slice(ci + 1).trim();
+            var obj = {};
+            obj[k] = v ? scalar(v) : parseBlock(listIndent + 2);
+            while (i < lines.length && lines[i].indent > listIndent) {
+              var sub = parseMapEntry(listIndent + 1);
+              Object.assign(obj, sub);
+            }
+            arr.push(obj);
+          } else {
+            arr.push(scalar(rest));
+          }
+        }
+        return arr;
+      }
+      var map = {};
+      var mapIndent = lines[i].indent;
+      while (i < lines.length && lines[i].indent === mapIndent && lines[i].indent >= minIndent) {
+        if (lines[i].text.indexOf("- ") === 0) break;
+        Object.assign(map, parseMapEntry(mapIndent));
+      }
+      return map;
+    }
+
+    function parseMapEntry(mapIndent) {
+      var l = lines[i++];
+      var ci = l.text.indexOf(":");
+      if (ci < 0) throw new Error("Line " + l.line + ": expected key: value");
+      var k = l.text.slice(0, ci).trim();
+      var v = l.text.slice(ci + 1).trim();
+      var out = {};
+      if (v) {
+        out[k] = scalar(v);
+      } else if (i < lines.length && lines[i].indent > mapIndent) {
+        out[k] = parseBlock(mapIndent + 1);
+      } else {
+        out[k] = null;
+      }
+      return out;
+    }
+
+    return parseBlock(0);
+  }
+
   function st(id, state, attrs) {
     return { entity_id: id, state: state, attributes: attrs || {}, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
   }
@@ -49,23 +163,27 @@
   };
 
   var card = document.getElementById("card");
-  card.setConfig({
-    world: "casetta",
-    effect: "auto",
-    weather_entity: "weather.home",
-    badges: [
-      { entity: "weather.home", attribute: "temperature", name: "Outside" },
-      { entity: "sensor.house_power", name: "Power" },
-      { entity: "binary_sensor.living_motion", name: "Motion" },
-      "binary_sensor.front_door",
-      { entity: "light.living_room", tap_action: { action: "toggle" } }
-    ]
-  });
-  card.hass = hass;
+  var yamlInput = document.getElementById("yaml-input");
+  var yamlErr = document.getElementById("yaml-err");
+
+  function applyYaml() {
+    try {
+      var cfg = parseYaml(yamlInput.value);
+      yamlErr.textContent = "";
+      card.setConfig(cfg);
+      card.hass = hass;
+    } catch (e) {
+      yamlErr.textContent = e.message;
+    }
+  }
+
+  applyYaml();
+  document.getElementById("apply-yaml").addEventListener("click", applyYaml);
 
   document.getElementById("toggle-theme").addEventListener("click", function () {
     dark = !dark;
     document.body.style.background = dark ? "#0b1020" : "#edf0fa";
+    document.body.style.color = dark ? "#e2e8f0" : "#1e293b";
     hass = Object.assign({}, hass, { themes: { darkMode: dark } });
     card.hass = hass;
   });
