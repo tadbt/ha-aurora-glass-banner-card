@@ -1,6 +1,6 @@
 {
   "name": "ha-aurora-glass-banner-card",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Aurora Glass Banner Card for Home Assistant",
   "scripts": {
