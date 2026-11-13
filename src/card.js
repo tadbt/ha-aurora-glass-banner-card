@@ -85,7 +85,11 @@
     ".fx-hero { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }",
     ".hero-body {",
     "  position: relative; z-index: 2; padding: 14px 18px;",
-    "  display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; width: 100%;",
+    "  display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-end;",
+    "  justify-content: space-between; gap: 10px 24px; width: 100%;",
+    "}",
+    ".hero-main {",
+    "  display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; flex: 0 0 auto;",
     "}",
     ".hero-tag {",
     "  position: absolute; z-index: 3; right: 16px; top: 14px;",
@@ -116,7 +120,7 @@
     ".clock .colon { animation: blink 1s steps(1) infinite; }",
     ".clock .ampm { font-size: .32em; letter-spacing: .02em; margin-left: .18em; vertical-align: baseline; }",
     "@keyframes blink { 50% { opacity: .25; } }",
-    ".hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }",
+    ".hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; flex: 1 1 240px; justify-content: flex-end; align-items: flex-end; }",
     ".chip {",
     "  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px;",
     "  border-radius: 99px; font-size: .75rem; font-weight: 600; color: var(--dim);",
@@ -156,6 +160,8 @@
     ".pop-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
     "@container (max-width: 560px) {",
     "  .hero-art { height: auto; width: 100%; -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); }",
+    "  .hero-body { flex-direction: column; align-items: flex-start; justify-content: flex-end; }",
+    "  .hero-chips { flex: 0 0 auto; width: 100%; justify-content: flex-start; }",
     "  .hero-tag { top: 10px; right: 12px; padding: 4px 10px; font-size: .7rem; }",
     "  .pop { top: 44px; right: 12px; }",
     "}"
@@ -431,9 +437,11 @@
         '<button class="hero-tag" id="hero-tag" type="button"><ha-icon icon="mdi:earth"></ha-icon><span id="hero-tag-text"></span><ha-icon icon="mdi:chevron-down"></ha-icon></button>',
         '<div class="pop" id="pop" hidden></div>',
         '<div class="hero-body">',
-        '  <p class="eyebrow" id="date-text"></p>',
-        '  <h1 class="greet" id="greet"></h1>',
-        '  <div class="clock" id="clock" aria-live="off"></div>',
+        '  <div class="hero-main">',
+        '    <p class="eyebrow" id="date-text"></p>',
+        '    <h1 class="greet" id="greet"></h1>',
+        '    <div class="clock" id="clock" aria-live="off"></div>',
+        '  </div>',
         '  <div class="hero-chips" id="chips"></div>',
         '</div>'
       ].join("");
@@ -655,7 +663,11 @@
         if (cfg.show_icon !== false) {
           var icoWrap = document.createElement("span");
           icoWrap.className = "c-ico";
-          if (cfg.color) icoWrap.style.color = cfg.color;
+          if (cfg.color) {
+            icoWrap.style.color = Array.isArray(cfg.color)
+              ? "rgb(" + cfg.color[0] + "," + cfg.color[1] + "," + cfg.color[2] + ")"
+              : cfg.color;
+          }
           var haIcon = document.createElement("ha-icon");
           haIcon.setAttribute("icon", pickIcon(cfg, st));
           icoWrap.appendChild(haIcon);
@@ -787,7 +799,7 @@
   }
 
   /* --------------------------------------------------------------------------
-     Visual Config Editor
+     Visual Config Editor (uses Home Assistant native <ha-form>)
      -------------------------------------------------------------------------- */
   function esc(v) {
     return String(v === undefined || v === null ? "" : v)
@@ -800,17 +812,28 @@
       this._root = this.attachShadow({ mode: "open" });
       this._config = {};
       this._hass = null;
+      this._mainForm = null;
+      this._badgeForms = [];
     }
 
     setConfig(config) {
-      this._config = Object.assign({}, config || {});
+      this._config = Object.assign({
+        world: "casetta",
+        effect: "auto",
+        theme: "auto",
+        show_clock: true,
+        show_date: true,
+        show_world_tag: true,
+        hour_24: true,
+        badges: []
+      }, config || {});
       this._render();
     }
 
     set hass(h) {
-      var hadHass = !!this._hass;
       this._hass = h;
-      if (!hadHass && h) this._render();
+      if (this._mainForm) this._mainForm.hass = h;
+      this._badgeForms.forEach(function (f) { f.hass = h; });
     }
 
     _emit(patch) {
@@ -829,171 +852,179 @@
       });
     }
 
-    _updateBadges(list) {
-      var cleaned = list.map(function (b) {
-        var out = {};
-        if (b.entity) out.entity = b.entity;
-        if (b.name) out.name = b.name;
-        if (b.attribute) out.attribute = b.attribute;
-        if (b.icon) out.icon = b.icon;
-        if (b.show_name === false) out.show_name = false;
-        if (b.tap_action && b.tap_action.action && b.tap_action.action !== "more-info") {
-          out.tap_action = b.tap_action;
-        }
-        return out;
+    _mainSchema() {
+      var worldOpts = Object.keys(window.AMB.W).map(function (id) {
+        return { value: id, label: window.AMB.W[id].name + " (" + id + ")" };
       });
-      this._emit({ badges: cleaned });
-      this._render();
+      var fxOpts = [
+        { value: "auto", label: "Auto (from weather entity)" },
+        { value: "none", label: "None" }
+      ].concat(Object.keys(window.FX.E).map(function (id) {
+        return { value: id, label: window.FX.E[id].name + " (" + id + ")" };
+      }));
+
+      return [
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            { name: "world", selector: { select: { mode: "dropdown", options: worldOpts } } },
+            { name: "effect", selector: { select: { mode: "dropdown", options: fxOpts } } },
+            { name: "weather_entity", selector: { entity: { domain: "weather" } } },
+            { name: "theme", selector: { select: { mode: "dropdown", options: [
+              { value: "auto", label: "Auto" },
+              { value: "dark", label: "Dark" },
+              { value: "light", label: "Light" }
+            ] } } }
+          ]
+        },
+        { name: "name", selector: { text: {} } },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            { name: "show_clock", selector: { boolean: {} } },
+            { name: "show_date", selector: { boolean: {} } },
+            { name: "show_world_tag", selector: { boolean: {} } },
+            { name: "hour_24", selector: { boolean: {} } }
+          ]
+        }
+      ];
+    }
+
+    _badgeSchema() {
+      return [
+        { name: "entity", selector: { entity: {} } },
+        {
+          type: "grid",
+          name: "",
+          schema: [
+            { name: "name", selector: { text: {} } },
+            { name: "attribute", selector: { text: {} } },
+            { name: "icon", selector: { icon: {} } },
+            { name: "color", selector: { color_rgb: {} } }
+          ]
+        },
+        { name: "tap_action", selector: { ui_action: {} } }
+      ];
+    }
+
+    _computeLabel(schema) {
+      var labels = {
+        world: "World",
+        effect: "Weather / Effect",
+        weather_entity: "Weather Entity (for Auto)",
+        theme: "Theme",
+        name: "Name / Label",
+        show_clock: "Show clock",
+        show_date: "Show date",
+        show_world_tag: "Show world picker tag",
+        hour_24: "24-hour clock",
+        entity: "Entity",
+        attribute: "Attribute (optional)",
+        icon: "Icon (optional)",
+        color: "Icon color (optional)",
+        tap_action: "Tap action"
+      };
+      return labels[schema.name] || schema.name;
     }
 
     _render() {
-      var c = this._config;
-      var entityIds = this._hass && this._hass.states ? Object.keys(this._hass.states).sort() : [];
-      var weatherIds = entityIds.filter(function (id) { return id.indexOf("weather.") === 0; });
-      var allList = entityIds.map(function (id) { return '<option value="' + esc(id) + '">'; }).join("");
-      var weatherList = weatherIds.map(function (id) { return '<option value="' + esc(id) + '">'; }).join("");
-
-      var worlds = Object.keys(window.AMB.W).map(function (id) {
-        return '<option value="' + id + '"' + (normWorld(c.world) === id ? " selected" : "") + ">" + esc(window.AMB.W[id].name) + " (" + id + ")</option>";
-      }).join("");
-      var fxs = ['<option value="auto"' + ((c.effect || "auto") === "auto" ? " selected" : "") + ">Auto (from weather_entity)</option>",
-      '<option value="none"' + (c.effect === "none" ? " selected" : "") + ">None</option>"
-      ].concat(Object.keys(window.FX.E).map(function (id) {
-        return '<option value="' + id + '"' + (normFx(c.effect) === id ? " selected" : "") + ">" + esc(window.FX.E[id].name) + " (" + id + ")</option>";
-      })).join("");
-
-      var badges = this._badgesList();
-      var badgesHtml = badges.map(function (b, idx) {
-        var act = (b.tap_action && b.tap_action.action) || "more-info";
-        var navPath = (b.tap_action && b.tap_action.navigation_path) || "";
-        return [
-          '<div class="b-card" data-idx="' + idx + '">',
-          '  <div class="b-head">',
-          '    <span>Badge #' + (idx + 1) + (b.name ? " · " + esc(b.name) : b.entity ? " · " + esc(b.entity) : "") + "</span>",
-          '    <div class="b-acts">',
-          '      <button type="button" class="ib" data-act="up" title="Move up"' + (idx === 0 ? " disabled" : "") + ">▲</button>",
-          '      <button type="button" class="ib" data-act="down" title="Move down"' + (idx === badges.length - 1 ? " disabled" : "") + ">▼</button>",
-          '      <button type="button" class="ib del" data-act="del" title="Remove">✕</button>',
-          "    </div>",
-          "  </div>",
-          '  <div class="b-grid">',
-          '    <div class="row"><label>Entity</label><input type="text" list="ha-entities" data-bf="entity" placeholder="sensor.temperature" value="' + esc(b.entity) + '"></div>',
-          '    <div class="row"><label>Label (optional)</label><input type="text" data-bf="name" placeholder="Outside" value="' + esc(b.name) + '"></div>',
-          '    <div class="row"><label>Attribute (optional)</label><input type="text" data-bf="attribute" placeholder="temperature" value="' + esc(b.attribute) + '"></div>',
-          '    <div class="row"><label>Icon (optional)</label><input type="text" data-bf="icon" placeholder="mdi:thermometer" value="' + esc(b.icon) + '"></div>',
-          '    <div class="row"><label>Tap Action</label><select data-bf="tap_action">',
-          '      <option value="more-info"' + (act === "more-info" ? " selected" : "") + ">More info</option>",
-          '      <option value="toggle"' + (act === "toggle" ? " selected" : "") + ">Toggle</option>",
-          '      <option value="navigate"' + (act === "navigate" ? " selected" : "") + ">Navigate</option>",
-          '      <option value="none"' + (act === "none" ? " selected" : "") + ">None</option>",
-          "    </select></div>",
-          act === "navigate" ? '<div class="row"><label>Navigation Path</label><input type="text" data-bf="nav_path" placeholder="/lovelace/energy" value="' + esc(navPath) + '"></div>' : "",
-          "  </div>",
-          "</div>"
-        ].join("");
-      }).join("");
-
+      var self = this;
       this._root.innerHTML = [
         "<style>",
-        "  .ed { display: grid; gap: 12px; padding: 8px 0; font-family: inherit; }",
-        "  .row { display: grid; gap: 4px; }",
-        "  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }",
-        "  label { font-size: 12px; font-weight: 600; opacity: .8; }",
-        "  input[type=text], select { width: 100%; box-sizing: border-box; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--divider-color, #444); background: var(--card-background-color, transparent); color: inherit; font: inherit; font-size: 13px; }",
-        "  .checks { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 2px; }",
-        "  .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }",
-        "  .sec-head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--divider-color, #333); }",
-        "  .sec-head b { font-size: 13px; }",
+        "  .ed { display: grid; gap: 16px; }",
+        "  .sec-head { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--divider-color, rgba(255,255,255,.12)); }",
+        "  .sec-head b { font-size: 14px; }",
         "  .add-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary-color, #7c5cff); background: transparent; color: var(--primary-color, #7c5cff); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }",
-        "  .b-list { display: grid; gap: 10px; }",
-        "  .b-card { padding: 10px; border-radius: 10px; border: 1px solid var(--divider-color, #444); display: grid; gap: 8px; }",
-        "  .b-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; }",
+        "  .b-list { display: grid; gap: 12px; }",
+        "  .b-card { padding: 12px; border-radius: 12px; border: 1px solid var(--divider-color, rgba(255,255,255,.14)); display: grid; gap: 10px; }",
+        "  .b-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; }",
         "  .b-acts { display: flex; gap: 4px; }",
-        "  .ib { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--divider-color, #444); background: transparent; color: inherit; cursor: pointer; font-size: 11px; }",
+        "  .ib { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--divider-color, rgba(255,255,255,.16)); background: transparent; color: inherit; cursor: pointer; font-size: 11px; }",
         "  .ib:disabled { opacity: .35; cursor: default; }",
         "  .ib.del { color: #fb7185; }",
-        "  .b-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }",
         "</style>",
-        '<datalist id="ha-entities">' + allList + "</datalist>",
-        '<datalist id="ha-weather">' + weatherList + "</datalist>",
         '<div class="ed">',
-        '  <div class="two">',
-        '    <div class="row"><label>World</label><select data-k="world">' + worlds + "</select></div>",
-        '    <div class="row"><label>Weather / Effect</label><select data-k="effect">' + fxs + "</select></div>",
-        "  </div>",
-        '  <div class="two">',
-        '    <div class="row"><label>Weather Entity (for Auto)</label><input type="text" list="ha-weather" data-k="weather_entity" placeholder="weather.home" value="' + esc(c.weather_entity) + '"></div>',
-        '    <div class="row"><label>Theme</label><select data-k="theme">' +
-        '      <option value="auto"' + ((c.theme || "auto") === "auto" ? " selected" : "") + ">Auto</option>" +
-        '      <option value="dark"' + (c.theme === "dark" ? " selected" : "") + ">Dark</option>" +
-        '      <option value="light"' + (c.theme === "light" ? " selected" : "") + '>Light</option></select></div>',
-        "  </div>",
-        '  <div class="row"><label>Name override (optional)</label><input type="text" data-k="name" placeholder="Uses HA user name by default" value="' + esc(c.name) + '"></div>',
-        '  <div class="checks">',
-        '    <label class="chk"><input type="checkbox" data-b="show_clock"' + (c.show_clock !== false ? " checked" : "") + "> Show clock</label>",
-        '    <label class="chk"><input type="checkbox" data-b="show_date"' + (c.show_date !== false ? " checked" : "") + "> Show date</label>",
-        '    <label class="chk"><input type="checkbox" data-b="show_world_tag"' + (c.show_world_tag !== false ? " checked" : "") + "> Show world tag</label>",
-        '    <label class="chk"><input type="checkbox" data-b="hour_24"' + (c.hour_24 !== false ? " checked" : "") + "> 24-hour clock</label>",
-        "  </div>",
-        '  <div class="sec-head"><b>Badges (' + badges.length + ')</b><button type="button" class="add-btn" id="add-badge">+ Add badge</button></div>',
-        '  <div class="b-list">' + badgesHtml + "</div>",
+        '  <div id="main-slot"></div>',
+        '  <div class="sec-head"><b>Badges</b><button type="button" class="add-btn" id="add-badge">+ Add badge</button></div>',
+        '  <div class="b-list" id="b-list"></div>',
         "</div>"
       ].join("");
 
-      var self = this;
-      this._root.querySelectorAll("[data-k]").forEach(function (el) {
-        el.addEventListener("change", function () {
-          var k = el.getAttribute("data-k");
-          var patch = {};
-          patch[k] = el.value;
-          self._emit(patch);
-        });
+      var mainForm = document.createElement("ha-form");
+      mainForm.hass = this._hass;
+      mainForm.data = Object.assign({}, this._config, {
+        world: normWorld(this._config.world),
+        effect: normFx(this._config.effect)
       });
-      this._root.querySelectorAll("[data-b]").forEach(function (el) {
-        el.addEventListener("change", function () {
-          var k = el.getAttribute("data-b");
-          var patch = {};
-          patch[k] = el.checked;
-          self._emit(patch);
-        });
+      mainForm.schema = this._mainSchema();
+      mainForm.computeLabel = this._computeLabel;
+      mainForm.addEventListener("value-changed", function (ev) {
+        ev.stopPropagation();
+        self._emit(ev.detail.value);
       });
-      this._root.querySelector("#add-badge").addEventListener("click", function () {
-        var list = self._badgesList();
-        list.push({ entity: "" });
-        self._updateBadges(list);
-      });
-      this._root.querySelectorAll(".b-card").forEach(function (cardEl) {
-        var idx = parseInt(cardEl.getAttribute("data-idx"), 10);
-        cardEl.querySelectorAll("[data-act]").forEach(function (btn) {
+      this._mainForm = mainForm;
+      this._root.querySelector("#main-slot").appendChild(mainForm);
+
+      var badges = this._badgesList();
+      var bList = this._root.querySelector("#b-list");
+      this._badgeForms = [];
+
+      badges.forEach(function (b, idx) {
+        var cardEl = document.createElement("div");
+        cardEl.className = "b-card";
+
+        var head = document.createElement("div");
+        head.className = "b-head";
+        head.innerHTML = [
+          "<span>Badge #" + (idx + 1) + (b.name ? " · " + esc(b.name) : b.entity ? " · " + esc(b.entity) : "") + "</span>",
+          '<div class="b-acts">',
+          '  <button type="button" class="ib" data-act="up" title="Move up"' + (idx === 0 ? " disabled" : "") + ">▲</button>",
+          '  <button type="button" class="ib" data-act="down" title="Move down"' + (idx === badges.length - 1 ? " disabled" : "") + ">▼</button>",
+          '  <button type="button" class="ib del" data-act="del" title="Remove">✕</button>',
+          "</div>"
+        ].join("");
+
+        head.querySelectorAll("[data-act]").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var act = btn.getAttribute("data-act");
-            var list = self._badgesList();
+            var next = self._badgesList();
             if (act === "del") {
-              list.splice(idx, 1);
+              next.splice(idx, 1);
             } else if (act === "up" && idx > 0) {
-              var tmp = list[idx - 1]; list[idx - 1] = list[idx]; list[idx] = tmp;
-            } else if (act === "down" && idx < list.length - 1) {
-              var tmp2 = list[idx + 1]; list[idx + 1] = list[idx]; list[idx] = tmp2;
+              var tmp = next[idx - 1]; next[idx - 1] = next[idx]; next[idx] = tmp;
+            } else if (act === "down" && idx < next.length - 1) {
+              var tmp2 = next[idx + 1]; next[idx + 1] = next[idx]; next[idx] = tmp2;
             }
-            self._updateBadges(list);
+            self._emit({ badges: next });
+            self._render();
           });
         });
-        cardEl.querySelectorAll("[data-bf]").forEach(function (inp) {
-          inp.addEventListener("change", function () {
-            var f = inp.getAttribute("data-bf");
-            var list = self._badgesList();
-            var item = list[idx];
-            if (f === "tap_action") {
-              item.tap_action = inp.value === "more-info" ? undefined : { action: inp.value };
-              if (inp.value === "navigate") item.tap_action.navigation_path = "";
-            } else if (f === "nav_path") {
-              item.tap_action = { action: "navigate", navigation_path: inp.value };
-            } else {
-              item[f] = inp.value;
-            }
-            self._updateBadges(list);
-          });
+
+        var bForm = document.createElement("ha-form");
+        bForm.hass = self._hass;
+        bForm.data = b;
+        bForm.schema = self._badgeSchema();
+        bForm.computeLabel = self._computeLabel;
+        bForm.addEventListener("value-changed", function (ev) {
+          ev.stopPropagation();
+          var next = self._badgesList();
+          next[idx] = ev.detail.value;
+          self._emit({ badges: next });
         });
+        self._badgeForms.push(bForm);
+
+        cardEl.appendChild(head);
+        cardEl.appendChild(bForm);
+        bList.appendChild(cardEl);
+      });
+
+      this._root.querySelector("#add-badge").addEventListener("click", function () {
+        var next = self._badgesList();
+        next.push({ entity: "" });
+        self._emit({ badges: next });
+        self._render();
       });
     }
   }
