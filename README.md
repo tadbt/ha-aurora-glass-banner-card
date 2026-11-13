@@ -1,112 +1,94 @@
-# Aurora Glass — animated dashboard for Home Assistant, with a setup wizard
+# Aurora Glass Banner Card
 
-🇮🇹 [Leggi in italiano](README.it.md)
-
-![Aurora Glass in English](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/aurora-glass-english.gif)
-
-A living dashboard: the sky, sun, moon and the windows of the little house follow the real time of day, ten animated worlds, eleven weather effects, buttons made of images and GIFs, alarm, climate, cameras and an energy view with costs from your own tariff.
-
-Add it from the Home Assistant **Marketplace** (or HACS on older versions) and a **wizard** builds the dashboard for you: it finds your rooms from your Home Assistant areas, lets you rename them, and adds the dashboard to the **sidebar**. No YAML. English and Italian.
-
-- **Live demo (no install):** [try it in your browser](https://domotikpro.it/aurora-glass-v3-demo/index.html?lang=en&utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=demo)
-- **Guide (Italian):** [domotikpro.it/progetti/aurora-glass-v3](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=guide)
-
-| The wizard | One room at a time |
-|---|---|
-| ![Name and language](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/wizard-dashboard.webp) | ![Room](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/wizard-room.webp) |
-
-## Install
-**Home Assistant 2026.11 or newer** (HACS is now built in as the Marketplace):
-1. **Settings → Marketplace** → *Add from link* (upper-right corner) → enter `https://github.com/lucalux00/aurora-glass` → **Add**. The first time, the Marketplace asks you to connect GitHub (device sign-in on github.com, read-only, no password in Home Assistant). If it asks for the type, choose **Integration**.
-2. Open **Aurora Glass** in the list → **Install**. The setup wizard opens right away, no restart needed. (If it doesn't: **Settings → Devices & services → Add integration → Aurora Glass**.)
-
-**Older versions, with HACS:**
-1. **HACS** → ⋮ → *Custom repositories* → add `https://github.com/lucalux00/aurora-glass`, type **Integration** → search **Aurora Glass** → *Download*.
-2. **Restart** Home Assistant.
-3. Home Assistant finds Aurora Glass by itself: open **Settings → Devices & services**, it is listed as *Discovered* → **Add**. (Or *Add integration* → *Aurora Glass*.)
-
-Already installed it with HACS? Updating to 2026.11 moves it to the Marketplace by itself: nothing to do, updates keep coming (they show up in **Settings → Updates**).
-
-**The wizard:**
-- **Your dashboard** — sidebar name, icon, language (automatic, English, Italian).
-- **Rooms** — the areas that have lights are already selected. For each room type the name you want and check lights, motion sensors, doors/windows/locks and temperature (pre-filled). Rooms without an area can be added too.
-- **Lights without a room** — lights and relays (Shelly, Sonoff…) that are in no area are listed on one screen, already placed in the right room from their names ("Kitchen ceiling" → Kitchen). Check, adjust, done — even with 10 rooms. Optionally put them in those Home Assistant areas too.
-- **Your home** — alarm panel, weather, air conditioner, whole-house power (W) and energy (kWh), cameras, currency. Leave a field empty to hide that part.
-- **Quick scenes** — what *Good morning*, *Cinema* and *Dinner* turn on (lights, or a scene/script).
-
-The new entry appears in the sidebar. Done.
-
-Change anything later right from the dashboard: **Rooms and devices** (or *Edit* next to each section, admins only) lets you rename rooms, change the image, add or remove lights, sensors, air conditioners and appliances. The same choices are also in **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add service*.
-
-Without Marketplace or HACS: copy `custom_components/aurora_glass` into your config folder and restart. The [download package](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) also contains an `english/` folder with a step-by-step guide and YAML examples for a manual install.
+A lightweight Home Assistant Lovelace banner card forked from **Aurora Glass**, keeping only the animated hero greeting panel with the live clock, time-of-day sky & worlds, weather/atmosphere effects, and glass pill badges.
 
 ## Features
-- 10 animated worlds and 11 weather effects (rain, snow, storm, fireflies, petals, fireworks…)
-- Sky and colours follow the real time of day
-- Your rooms, your names: as many rooms and lights as you have
-- Dimmable lights show their brightness on the button ("On · 60%" and a thin level bar); tap to switch, press and hold for the Home Assistant dialog with brightness and color
-- 50 ready-made button images and GIFs (lights, scenes, sensors, alarm, climate), editable from the dashboard
-- Alarm panel with code, cameras with live view
-- Climate control for one or more air conditioners (a row to switch between them); infrared ones (SwitchBot, Broadlink…) are shown as "last command", because Home Assistant can't know if they are really on
-- Top bar you can tap: the lights that are on (tap one to turn it off) and the rooms with motion, with when each sensor last saw someone
-- Energy view: live power, kWh today / yesterday / month / year (worked out from your meter's history, no extra sensors needed, even if Home Assistant reset the meter's statistics) and costs = kWh × your tariff; appliances with their power sensors
-- English and Italian; automatic mode follows each user's language
-- **Privacy:** everything runs locally. The only external request is Google Fonts (Manrope, Sora).
 
-## Optional packs
-Extra features you can add and remove whenever you like: **Settings → Devices & services → Aurora Glass → Configure → Packs**. Tick a pack to download and enable it, untick it to remove it, then reload the browser page. Nothing is downloaded unless you tick it, and Aurora Glass works the same without packs.
+- **10 animated worlds** (`casetta`, `citta`, `montagna`, `mare`, `foresta`, `spazio`, `giappone`, `cyberpunk`, `natale`, `oceano`) with continuous day-to-night sky, sun/moon arc, clouds, stars, and glowing windows at night.
+- **11 canvas weather & atmosphere effects** (`pioggia`/`rain`, `temporale`/`storm`, `neve`/`snow`, `nebbia`/`fog`, `foglie`/`leaves`, `petali`/`petals`, `lucciole`/`fireflies`, `stelle`/`stars`, `fuochi`/`fireworks`, `bolle`/`bubbles`, `coriandoli`/`confetti`), plus `auto` mode driven by a `weather.*` entity.
+- **Live clock & greeting** — time-aware greeting (`Good morning`, `Good afternoon`, `Good evening`, `Good night`), date eyebrow, and gradient tabular clock.
+- **Glass pill badges (`badges`)** — displays any Home Assistant entities (or attributes) in the exact Aurora Glass pill style with auto icons, localized states, and `tap_action` support (`more-info`, `toggle`, `navigate`, `call-service`, `url`, `none`).
+- **Auto dark/light theme** — follows Home Assistant's theme or can be forced to `dark` / `light`.
+- **Visual editor + live world/effect picker** — configure via the Home Assistant UI editor or YAML.
 
-- **Mixer** (*Regia*): animated scene pads, A ⇄ B fade between two scenes, REC to save your lights as a new pad, brightness and color per room. [Try it live](https://domotikpro.it/aurora-glass-pacchetti-demo/index.html?vista=regia&lang=en&utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti)
+## Installation
 
-The pack list and files come from [domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti); every file is checked against the SHA-256 in the list before it is installed. No data about your home is sent.
+### HACS (Custom Repository)
 
-## Use the card in your own dashboards
-The integration also loads the card everywhere, so you can use it in any dashboard (panel view recommended):
+1. In Home Assistant, open **HACS → Frontend → ⋮ → Custom repositories**.
+2. Add this repository URL with category **Dashboard** (or **Lovelace**).
+3. Install **Aurora Glass Banner Card** and reload your browser.
+
+### Manual
+
+1. Copy [`aurora-glass-banner-card.js`](aurora-glass-banner-card.js) into `/config/www/aurora-glass-banner-card.js`.
+2. Add `/local/aurora-glass-banner-card.js` as a JavaScript Module under **Settings → Dashboards → ⋮ → Resources**.
+
+## Configuration
 
 ```yaml
-type: custom:aurora-glass-card
-language: en
-rooms:
-  - name: Living room
-    lights: [light.living_room, light.sofa_lamp]
-    motion: binary_sensor.living_room_motion
-    openings: [binary_sensor.front_door]
-    temperature: sensor.living_room_temperature
-  - name: Kitchen
-    lights: [light.kitchen]
-entities:
-  alarm: alarm_control_panel.home
-  weather: weather.forecast_home
-  energy:
-    power: sensor.house_power
-    energyTotal: sensor.house_energy
+type: custom:aurora-glass-banner-card
+world: casetta
+effect: auto
+weather_entity: weather.home
+theme: auto
+show_date: true
+show_clock: true
+show_world_tag: true
+hour_24: true
+badges:
+  - entity: weather.home
+    attribute: temperature
+    name: Outside
+  - entity: sensor.house_power
+    name: Power
+  - entity: binary_sensor.living_motion
+    name: Motion
+  - binary_sensor.front_door
+  - entity: light.living_room
+    tap_action:
+      action: toggle
 ```
 
-Every option is in [`package/english/card-example.yaml`](package/english/card-example.yaml).
+### Card Options
 
-## Troubleshooting
-- *No sidebar entry after the wizard* — reload the page (Ctrl+F5).
-- *Grey lights* — the device is offline or the entity was removed: *Configure → Rooms*.
-- *Costs at zero* — tap the *Tariff* bar in the Energy view and enter your price per kWh.
+| Option | Default | Description |
+| --- | --- | --- |
+| `world` | `casetta` | Animated world (`casetta`, `citta`, `montagna`, `mare`, `foresta`, `spazio`, `giappone`, `cyberpunk`, `natale`, `oceano`; English aliases like `house`, `city`, `mountain`, `sea`, `forest`, `space`, `japan`, `christmas`, `ocean` also work). |
+| `effect` | `auto` | Weather/atmosphere overlay: `auto`, `none`, or any effect (`rain`, `storm`, `snow`, `fog`, `leaves`, `petals`, `fireflies`, `stars`, `fireworks`, `bubbles`, `confetti`). |
+| `weather_entity` | — | Optional `weather.*` entity used when `effect: auto`. |
+| `theme` | `auto` | `auto` (follows HA), `dark`, or `light`. |
+| `name` | HA user first name | Optional name override for the greeting. |
+| `greeting` | auto by hour | Optional custom greeting text. |
+| `show_date` | `true` | Show the date eyebrow above the greeting. |
+| `show_clock` | `true` | Show the large gradient clock. |
+| `show_world_tag` | `true` | Show the top-right world pill (click to switch world/effect). |
+| `hour_24` | `true` | `true` for 24-hour clock, `false` for 12-hour AM/PM. |
+| `language` | `auto` | `auto`, `en`, or `it`. |
+| `badges` | `[]` | List of entity IDs or badge objects. |
 
-## Remove
-Settings → Devices & services → Aurora Glass → Delete, then uninstall it from the Marketplace (or HACS).
+### Badge Options
 
-## For developers
-The card sources are in `src/` (open `src/index.html` for the preview, `src/tests/harness.html` for a simulated Home Assistant). `python tools/build.py` builds the integration's frontend, `dist/` and the download zip.
+Each item in `badges` can be an entity ID string or an object:
 
-## Support Aurora Glass
-Aurora Glass is free and will stay free. I build it in my spare time and test every release on my own Home Assistant. If it is useful to you:
+| Option | Default | Description |
+| --- | --- | --- |
+| `entity` | — | Home Assistant entity ID. |
+| `attribute` | — | Optional attribute to display instead of `state`. |
+| `name` | `friendly_name` | Custom label before the value. |
+| `show_name` | `true` | Set `false` to show only icon and value. |
+| `show_icon` | `true` | Show entity/custom icon. |
+| `show_state` | `true` | Show formatted state/attribute value. |
+| `icon` | auto | Override icon (e.g. `mdi:thermometer`). |
+| `unit` | auto | Override unit of measurement. |
+| `color` | — | Custom icon color. |
+| `precision` | `1` (auto) | Decimal places for numeric values. |
+| `tap_action` | `more-info` | Standard HA action (`more-info`, `toggle`, `navigate`, `url`, `call-service`, `none`). |
 
-- ⭐ **Star this repository**: it is free and helps other people find it.
-- ☕ **[Buy me a coffee on Ko-fi](https://ko-fi.com/domotikpro)**: one-time or monthly, by card or PayPal.
+## Development
 
-Contributions are voluntary: Aurora Glass is the same for everyone.
+Source files live in `src/`. Rebuild the single-file bundle with:
 
-## License
-[GPL-3.0](LICENSE). You can use, study, modify and share it, commercially too, as long as every modified version you distribute stays under GPL-3.0, comes with its source code and keeps the original notice: © 2026 DomotikPro.it (Luca Pinelli).
-
-The name "Aurora Glass" and the DomotikPro.it brand are not covered by the license: a modified version must use a different name.
-
----
-Made by [DomotikPro.it](https://domotikpro.it/?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=footer) — practical guides for a reliable smart home.
+```bash
+python3 tools/build.py
+```

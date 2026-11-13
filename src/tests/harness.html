@@ -1,125 +1,79 @@
 <!doctype html>
-<html lang="en" translate="no">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aurora Glass — prova con Home Assistant simulato</title>
-<style>html, body { margin: 0; height: 100%; background: #0b1020; }</style>
+<title>Aurora Glass Banner Card — Test Harness</title>
+<style>
+  html, body { margin: 0; min-height: 100%; background: #0b1020; font-family: system-ui, sans-serif; color: #fff; }
+  .wrap { max-width: 960px; margin: 32px auto; padding: 0 16px; display: grid; gap: 20px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { padding: 6px 12px; border-radius: 8px; border: 1px solid #334; background: #182038; color: #fff; cursor: pointer; }
+</style>
 </head>
 <body>
-<!-- Prova della pagina della barra laterale con un hass finto: ?lang=it|en, ?cfg=default per la disposizione di esempio -->
-<script src="../../dist/aurora-v3.js"></script>
+<div class="wrap">
+  <div class="bar">
+    <button id="toggle-theme" type="button">Toggle Light/Dark</button>
+    <button id="toggle-rain" type="button">Toggle Rain</button>
+  </div>
+  <aurora-glass-banner-card id="card"></aurora-glass-banner-card>
+</div>
+<script src="../../aurora-glass-banner-card.js"></script>
 <script>
-  var q = new URLSearchParams(location.search), lang = q.get("lang") || "en";
-  function st(id, state, attrs) { return { entity_id: id, state: state, attributes: attrs || {}, last_changed: new Date(Date.now() - 600000).toISOString(), last_updated: new Date().toISOString() }; }
-  var S = {};
-  [["light.living_room_lamp", "on", "Living room lamp"], ["light.living_room_ceiling", "off", "Ceiling"], ["light.tv_strip", "on", "TV strip"],
-   ["light.kitchen", "off", "Kitchen"], ["light.kitchen_island", "on", "Island"], ["light.bedroom", "off", "Bedroom"], ["light.office", "unavailable", "Office desk"],
-   ["light.bathroom", "off", "Bathroom mirror"]].forEach(function (x) { S[x[0]] = st(x[0], x[1], { friendly_name: x[2] }); });
-  /* 3.6: luminosità come in Home Assistant (0-255, null da spenta); Island resta una luce solo on/off */
-  var LASTB = { "light.living_room_lamp": 153, "light.living_room_ceiling": 200, "light.tv_strip": 255, "light.kitchen": 3, "light.bedroom": 77, "light.bathroom": 255 };
-  Object.keys(LASTB).forEach(function (id) { S[id].attributes.supported_color_modes = ["brightness"]; S[id].attributes.brightness = S[id].state === "on" ? LASTB[id] : null; });
-  S["binary_sensor.living_motion"] = st("binary_sensor.living_motion", "on", { friendly_name: "Living motion", device_class: "motion" });
-  S["binary_sensor.kitchen_motion"] = st("binary_sensor.kitchen_motion", "off", { device_class: "motion" });
-  S["binary_sensor.front_door"] = st("binary_sensor.front_door", "off", { friendly_name: "Front door", device_class: "door" });
-  S["binary_sensor.kitchen_window"] = st("binary_sensor.kitchen_window", "on", { friendly_name: "Kitchen window", device_class: "window" });
-  S["lock.front"] = st("lock.front", "locked", { friendly_name: "Front lock" });
-  S["sensor.living_temp"] = st("sensor.living_temp", "21.4", { unit_of_measurement: "°C", device_class: "temperature" });
-  S["sensor.bedroom_temp"] = st("sensor.bedroom_temp", "17.2", { unit_of_measurement: "°C", device_class: "temperature" });
-  S["alarm_control_panel.home"] = st("alarm_control_panel.home", "disarmed", { friendly_name: "Home alarm", supported_features: 7 });
-  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C" });
-  S["sensor.house_power"] = st("sensor.house_power", "642", { unit_of_measurement: "W" });
-  S["climate.living"] = st("climate.living", "cool", { friendly_name: "Living AC", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], current_temperature: 24, temperature: 22, min_temp: 16, max_temp: 30, fan_modes: ["auto", "low", "high"], fan_mode: "auto", hvac_action: "cooling" });
-  S["scene.movie"] = st("scene.movie", "unknown", { friendly_name: "Movie night" });
-  var calls = [];
+  function st(id, state, attrs) {
+    return { entity_id: id, state: state, attributes: attrs || {}, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
+  }
+  var states = {
+    "weather.home": st("weather.home", "partlycloudy", { temperature: 21.4, temperature_unit: "°C", friendly_name: "Weather" }),
+    "sensor.house_power": st("sensor.house_power", "612", { unit_of_measurement: "W", device_class: "power", friendly_name: "Power" }),
+    "binary_sensor.living_motion": st("binary_sensor.living_motion", "off", { device_class: "motion", friendly_name: "Living motion" }),
+    "binary_sensor.front_door": st("binary_sensor.front_door", "off", { device_class: "door", friendly_name: "Front door" }),
+    "light.living_room": st("light.living_room", "on", { friendly_name: "Living room" })
+  };
+  var dark = true;
   var hass = {
-    states: S, user: { name: "Alex Smith", is_admin: true }, language: lang, locale: { language: lang },
+    states: states,
+    user: { name: "Alex Smith" },
+    language: "en",
+    locale: { language: "en" },
+    themes: { darkMode: dark },
     callService: function (d, s, data) {
-      calls.push([d, s, data]); window.CALLS = calls;
-      var ids = [].concat(data.entity_id || []);
-      ids.forEach(function (id) {
-        var o = S[id]; if (!o) return;
-        var ns = s === "toggle" ? (o.state === "on" ? "off" : "on") : s === "turn_on" ? "on" : s === "turn_off" ? "off" : o.state;
-        if (/^light\./.test(id) && o.state !== "unavailable") {
-          var at = Object.assign({}, o.attributes);
-          if (LASTB[id] !== undefined) { if (o.state === "on" && at.brightness) LASTB[id] = at.brightness; at.brightness = ns === "on" ? LASTB[id] : null; }
-          S[id] = st(id, ns, at);
-        }
-      });
-      push();
+      var id = data && data.entity_id;
+      if (id && states[id]) {
+        states[id].state = states[id].state === "on" ? "off" : "on";
+        card.hass = Object.assign({}, hass, { states: Object.assign({}, states) });
+      }
       return Promise.resolve();
-    },
-    callWS: function (m) { return Promise.resolve({}); }
-  };
-  function push() { hass = Object.assign({}, hass, { states: Object.assign({}, S) }); panel.hass = hass; }
-  /* 3.5: secondo climatizzatore a infrarossi (stato presunto, senza temperatura), elettrodomestici, una presa tra le luci */
-  S["climate.bedroom_ir"] = st("climate.bedroom_ir", "fan_only", { friendly_name: "Bedroom AC", hvac_modes: ["off", "cool", "heat", "fan_only"], current_temperature: null, temperature: 21, min_temp: 16, max_temp: 30, assumed_state: true });
-  S["switch.coffee_machine"] = st("switch.coffee_machine", "off", { friendly_name: "Coffee machine" });
-  S["sensor.washing_machine_power"] = st("sensor.washing_machine_power", "460", { friendly_name: "Washing machine Power", unit_of_measurement: "W", device_class: "power" });
-  S["sensor.dishwasher_power"] = st("sensor.dishwasher_power", "0.7", { friendly_name: "shelly1pm-E8DB84A07C8F Power", unit_of_measurement: "W", device_class: "power" });
-  S["sensor.house_energy"] = st("sensor.house_energy", "10843.4", { unit_of_measurement: "kWh", device_class: "energy", state_class: "total_increasing" });
-  S["light.hall"] = st("light.hall", "off", { friendly_name: "Hall light" });
-  var entities = {}, devices = { d_ac: { id: "d_ac", area_id: "bedroom", name: "Bedroom AC" } }, areas = { living: { area_id: "living", name: "Living room" }, kitchen: { area_id: "kitchen", name: "Kitchen" }, bedroom: { area_id: "bedroom", name: "Bedroom" } };
-  Object.keys(S).forEach(function (id) { entities[id] = { entity_id: id, area_id: /living|tv_strip/.test(id) ? "living" : /kitchen|coffee/.test(id) ? "kitchen" : null }; });
-  entities["climate.bedroom_ir"] = { entity_id: "climate.bedroom_ir", device_id: "d_ac", area_id: null };
-  /* statistiche del contatore: a settembre Home Assistant ha azzerato la somma (change negativo), il contatore dice +367 kWh */
-  function statRows(per, from) {
-    var now = new Date(), rows = [], d, i;
-    if (per === "month") {
-      var months = [[294.7, 8848.2], [193.9, 9042.1], [217.5, 9259.6], [181.8, 9441.4], [200.4, 9641.7], [197.2, 9839.0], [296.9, 10135.8], [188.0, 10323.9], [-1729.85, 10690.7], [152.6, 10843.4]];
-      for (i = 0; i < months.length; i++) { d = new Date(now.getFullYear(), i, 1); if (d >= new Date(from)) rows.push({ start: d.getTime(), change: months[i][0], state: months[i][1] }); }
-      return rows;
     }
-    if (per === "day") { for (i = 14; i >= 0; i--) { d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); rows.push({ start: d.getTime(), change: i === 4 ? -900 : 5 + (i % 4), state: 10800 + (14 - i) * 6 }); } return rows; }
-    for (i = 48; i >= 0; i--) { d = new Date(now.getTime() - i * 3600e3); d.setMinutes(0, 0, 0); rows.push({ start: d.getTime(), change: 0.25, state: 10840 + (48 - i) * 0.25 }); }
-    return rows;
-  }
-  var stored = q.get("cfg") === "default" ? null : {
-    rooms: [
-      { area_id: "living", name: "Living room", image: "salotto", lights: ["light.living_room_lamp", "light.living_room_ceiling", "light.tv_strip"], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: ["sensor.living_temp"] },
-      { area_id: "kitchen", name: "Kitchen", image: "cucina", lights: ["light.kitchen", "light.kitchen_island", "switch.coffee_machine"], motion: ["binary_sensor.kitchen_motion"], openings: ["binary_sensor.kitchen_window"], temperature: [] },
-      { area_id: "bedroom", name: "Bedroom", image: "camera", lights: ["light.bedroom"], motion: [], openings: [], temperature: ["sensor.bedroom_temp"] },
-      { area_id: null, name: "Office <b>&</b> study", image: "sgabuzzino", lights: ["light.office"], motion: [], openings: [], temperature: [] },
-      { area_id: null, name: "Bathroom", image: "bagno_piccolo", lights: ["light.bathroom"], motion: [], openings: [], temperature: [] }
-    ],
-    devices: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: ["climate.living", "climate.bedroom_ir"], power: "sensor.house_power", energy: "sensor.house_energy",
-      appliances: ["sensor.washing_machine_power", "sensor.dishwasher_power"], cameras: [], currency: q.get("cur") || "€" },
-    scenes: { morning: ["light.kitchen", "light.bathroom"], cinema: ["scene.movie"], dinner: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"], night_alarm: true, away_alarm: true }
   };
-  /* come build_card_config in helpers.py */
-  function cardFrom(o) {
-    var d = o.devices, ent = { alarm: d.alarm, weather: d.weather, energy: { power: d.power, energyTotal: d.energy, appliances: d.appliances.map(function (p) { return { p: p }; }) } };
-    if (d.climate.length) { ent.climate = d.climate[0]; ent.climates = d.climate; }
-    var sc = [];
-    ["morning", "cinema", "dinner"].forEach(function (id) { var v = o.scenes[id] || [], ha = v.filter(function (x) { return /^(scene|script)\./.test(x); }); if (ha.length) sc.push({ id: id, entity: ha[0] }); else if (v.length) sc.push({ id: id, lights: v }); });
-    sc.push({ id: "night", alarm: o.scenes.night_alarm && d.alarm ? "armed_night" : null }, { id: "away", alarm: o.scenes.away_alarm && d.alarm ? "armed_away" : null });
-    var c = { language: lang, rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
-    if (q.get("edit") !== "0") c.entry_id = "test_entry";
-    return c;
-  }
-  window.SAVES = [];
-  hass.entities = entities; hass.devices = devices; hass.areas = areas;
-  if (q.get("admin") === "0") hass.user.is_admin = false;
-  hass.callWS = function (m) {
-    if (m.type === "aurora_glass/config") return stored ? Promise.resolve(JSON.parse(JSON.stringify(stored))) : Promise.reject({ message: "not found" });
-    if (m.type === "aurora_glass/config/save") {
-      window.SAVES.push(m); stored = { rooms: m.rooms, devices: m.devices, scenes: m.scenes };
-      setTimeout(function () { panel.panel = { config: { card: cardFrom(stored) } }; }, 300);   /* Home Assistant registra di nuovo la pagina */
-      return Promise.resolve({ saved: true });
-    }
-    if (m.type === "recorder/statistics_during_period") { var r = {}; r[m.statistic_ids[0]] = statRows(m.period, m.start_time); return Promise.resolve(r); }
-    if (m.type === "history/history_during_period") return Promise.resolve({});
-    return Promise.resolve({});
-  };
-  var card = q.get("cfg") === "default" ? { language: lang } : cardFrom(stored);
-  var panel = document.createElement(window.AuroraGlassPanelTag);
-  document.body.appendChild(panel);
-  panel.narrow = window.innerWidth < 870;
-  panel.panel = { config: { card: card } };
-  panel.hass = hass;
-  window.PANEL = panel; window.push = push; window.S = S; window.st = st;
-  /* come muovere il cursore nella finestra di Home Assistant: setB("light.tv_strip", 128) */
-  window.setB = function (id, b) { var o = S[id]; S[id] = st(id, b > 0 ? "on" : "off", Object.assign({}, o.attributes, { brightness: b > 0 ? b : null })); if (b > 0) LASTB[id] = b; push(); };
+
+  var card = document.getElementById("card");
+  card.setConfig({
+    world: "casetta",
+    effect: "auto",
+    weather_entity: "weather.home",
+    badges: [
+      { entity: "weather.home", attribute: "temperature", name: "Outside" },
+      { entity: "sensor.house_power", name: "Power" },
+      { entity: "binary_sensor.living_motion", name: "Motion" },
+      "binary_sensor.front_door",
+      { entity: "light.living_room", tap_action: { action: "toggle" } }
+    ]
+  });
+  card.hass = hass;
+
+  document.getElementById("toggle-theme").addEventListener("click", function () {
+    dark = !dark;
+    document.body.style.background = dark ? "#0b1020" : "#edf0fa";
+    hass = Object.assign({}, hass, { themes: { darkMode: dark } });
+    card.hass = hass;
+  });
+
+  document.getElementById("toggle-rain").addEventListener("click", function () {
+    states["weather.home"].state = states["weather.home"].state === "rainy" ? "partlycloudy" : "rainy";
+    card.hass = Object.assign({}, hass, { states: Object.assign({}, states) });
+  });
 </script>
 </body>
 </html>

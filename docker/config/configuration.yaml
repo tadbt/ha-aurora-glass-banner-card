@@ -1,0 +1,10 @@
+default_config:
+
+demo:
+
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/aurora-glass-banner-card.js?v=1
+      type: module
+

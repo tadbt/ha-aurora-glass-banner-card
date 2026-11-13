@@ -1,5 +1,7 @@
 {
-  "name": "Aurora Glass",
+  "name": "Aurora Glass Banner Card",
   "render_readme": true,
+  "filename": "aurora-glass-banner-card.js",
+  "content_in_root": true,
   "homeassistant": "2024.8.0"
 }

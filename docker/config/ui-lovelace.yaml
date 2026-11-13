@@ -1,0 +1,24 @@
+title: Aurora Glass Banner Test
+views:
+  - title: Home
+    path: home
+    cards:
+      - type: custom:aurora-glass-banner-card
+        world: casetta
+        effect: auto
+        weather_entity: weather.demo_weather_north
+        show_date: true
+        show_clock: true
+        show_world_tag: true
+        badges:
+          - entity: weather.demo_weather_north
+            attribute: temperature
+            name: Outside
+          - entity: light.bed_light
+            name: Bed Light
+            tap_action:
+              action: toggle
+          - entity: binary_sensor.movement_backyard
+            name: Backyard
+          - sun.sun
+

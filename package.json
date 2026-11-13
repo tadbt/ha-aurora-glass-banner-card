@@ -1,0 +1,12 @@
+{
+  "name": "ha-aurora-glass-banner-card",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aurora Glass Banner Card for Home Assistant",
+  "scripts": {
+    "build": "python3 tools/build.py",
+    "test:ha": "npm run build && docker compose -f docker/docker-compose.yml up -d && node scripts/ha-wait.js",
+    "test:ha:down": "docker compose -f docker/docker-compose.yml down"
+  }
+}
+

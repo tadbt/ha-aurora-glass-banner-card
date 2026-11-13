@@ -2,3 +2,10 @@ build/
 dist/
 __pycache__/
 *.pyc
+docker/config/.storage/
+docker/config/.HA_VERSION
+docker/config/*.db*
+docker/config/*.log*
+docker/config/tts/
+docker/config/deps/
+docker/config/image/

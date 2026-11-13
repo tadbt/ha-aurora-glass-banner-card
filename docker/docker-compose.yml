@@ -1,0 +1,12 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ha-aurora-glass-banner-test
+    ports:
+      - "8123:8123"
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./config:/config
+      - ../aurora-glass-banner-card.js:/config/www/aurora-glass-banner-card.js:ro
+
