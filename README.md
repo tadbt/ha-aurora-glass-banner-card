@@ -82,10 +82,39 @@ Each item in `badges` can be an entity ID string or an object:
 | `show_icon` | `true` | Show entity/custom icon. |
 | `show_state` | `true` | Show formatted state/attribute value. |
 | `icon` | auto | Override icon (e.g. `mdi:thermometer`). |
-| `unit` | auto | Override unit of measurement. |
-| `color` | — | Custom icon color. |
+| `unit` | auto | Override unit of measurement (supports Jinja2 in YAML). |
+| `value` | auto | Custom value or Jinja2 template (YAML only). |
+| `color` | — | Custom icon color (supports RGB, CSS color, or Jinja2 in YAML). |
+| `colors` | — | Value-based color map or threshold/range rules (YAML only). |
+| `badge_color` | — | Custom pill background/border tint (supports Jinja2 in YAML). |
 | `precision` | `1` (auto) | Decimal places for numeric values. |
 | `tap_action` | `more-info` | Standard HA action (`more-info`, `toggle`, `navigate`, `url`, `call-service`, `none`). |
+
+#### Badge Jinja2 & Value-Based Colors (YAML only)
+
+In YAML, `name`, `value`, `icon`, `unit`, `color`, and `badge_color` accept Home Assistant Jinja2 templates (`{{ ... }}` / `{% ... %}`), with `entity` available as a template variable when `entity:` is set. You can also color badges based on their state or numeric value using `colors`:
+
+```yaml
+badges:
+  - entity: weather.home
+    attribute: temperature
+    name: Outside
+    colors:
+      - value: 30
+        color: "#ef4444"
+      - value: 20
+        color: "#22c55e"
+      - value: 0
+        color: "#38bdf8"
+  - entity: binary_sensor.front_door
+    colors:
+      "on": "#fb7185"
+      "off": "#34d399"
+  - name: "Power"
+    icon: "{% if states('sensor.house_power') | float > 3000 %}mdi:flash-alert{% else %}mdi:flash{% endif %}"
+    value: "{{ states('sensor.house_power') }} W"
+    color: "{% if states('sensor.house_power') | float > 3000 %}#f59e0b{% else %}#34d399{% endif %}"
+```
 
 ## Development & Testing
 

@@ -272,6 +272,101 @@
 
   function pad(n) { return (n < 10 ? "0" : "") + n; }
 
+  function isTemplate(val) {
+    return typeof val === "string" && (val.indexOf("{{") !== -1 || val.indexOf("{%") !== -1);
+  }
+
+  function tplKey(tpl, entity) {
+    return entity ? tpl + "\0" + entity : tpl;
+  }
+
+  function parseColor(c) {
+    if (Array.isArray(c) && c.length >= 3) {
+      return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+    }
+    if (typeof c === "string" && c.trim()) return c.trim();
+    return null;
+  }
+
+  function matchValueColor(colorsCfg, rawVal, resolveStr) {
+    if (!colorsCfg) return null;
+    var str = rawVal !== undefined && rawVal !== null ? String(rawVal).trim() : "";
+    var strLow = str.toLowerCase();
+    var num = typeof rawVal === "number"
+      ? rawVal
+      : (str && /^-?\d+(\.\d+)?/.test(str) ? parseFloat(str) : NaN);
+
+    if (Array.isArray(colorsCfg)) {
+      var thresholds = [];
+      var rules = [];
+      var fallback = null;
+      colorsCfg.forEach(function (item) {
+        if (!item || typeof item !== "object") return;
+        var hasRange = item.above !== undefined || item.below !== undefined || item.min !== undefined || item.max !== undefined;
+        var hasState = item.state !== undefined || item.equals !== undefined;
+        var isThreshold = item.value !== undefined && !hasRange && !hasState && !isNaN(Number(item.value)) && String(item.value).trim() !== "";
+        if (isThreshold) {
+          thresholds.push(item);
+        } else if (item.default && !hasRange && !hasState && item.value === undefined) {
+          fallback = item.color;
+        } else {
+          rules.push(item);
+        }
+      });
+
+      for (var i = 0; i < rules.length; i++) {
+        var r = rules[i];
+        if (r.state !== undefined || r.equals !== undefined) {
+          var target = String(r.state !== undefined ? r.state : r.equals).trim();
+          if (str === target || strLow === target.toLowerCase()) {
+            return parseColor(resolveStr(r.color));
+          }
+        } else if (r.value !== undefined) {
+          var tv = String(r.value).trim();
+          if (str === tv || strLow === tv.toLowerCase()) {
+            return parseColor(resolveStr(r.color));
+          }
+        } else if (r.above !== undefined || r.below !== undefined || r.min !== undefined || r.max !== undefined) {
+          if (!isNaN(num)) {
+            var ok = true;
+            if (r.above !== undefined && !(num > Number(r.above))) ok = false;
+            if (r.below !== undefined && !(num < Number(r.below))) ok = false;
+            if (r.min !== undefined && !(num >= Number(r.min))) ok = false;
+            if (r.max !== undefined && !(num <= Number(r.max))) ok = false;
+            if (ok) return parseColor(resolveStr(r.color));
+          }
+        }
+      }
+
+      if (thresholds.length && !isNaN(num)) {
+        thresholds.sort(function (a, b) { return Number(b.value) - Number(a.value); });
+        for (var j = 0; j < thresholds.length; j++) {
+          if (num >= Number(thresholds[j].value)) {
+            return parseColor(resolveStr(thresholds[j].color));
+          }
+        }
+      }
+
+      return fallback !== null ? parseColor(resolveStr(fallback)) : null;
+    }
+
+    if (typeof colorsCfg === "object") {
+      if (Object.prototype.hasOwnProperty.call(colorsCfg, str)) {
+        return parseColor(resolveStr(colorsCfg[str]));
+      }
+      var keys = Object.keys(colorsCfg);
+      for (var k = 0; k < keys.length; k++) {
+        if (keys[k] !== "default" && keys[k].toLowerCase() === strLow) {
+          return parseColor(resolveStr(colorsCfg[keys[k]]));
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(colorsCfg, "default")) {
+        return parseColor(resolveStr(colorsCfg.default));
+      }
+    }
+    return null;
+  }
+
   function pickIcon(cfg, st) {
     if (cfg.icon) return cfg.icon;
     if (!st) return "mdi:help-circle-outline";
@@ -344,6 +439,7 @@
       this._world = "casetta";
       this._fxKind = "none";
       this._popOpen = false;
+      this._tplSubs = {};
       this._onDocClick = this._handleDocClick.bind(this);
     }
 
@@ -362,6 +458,7 @@
 
       this._world = normWorld(this._config.world);
       this._fxKind = normFx(this._config.effect);
+      this._syncTemplates();
       if (this._built) {
         this._applyAll();
       } else {
@@ -372,6 +469,7 @@
     set hass(h) {
       this._hass = h;
       if (!this._built) this._build();
+      this._syncTemplates();
       this._syncHass();
     }
 
@@ -401,11 +499,13 @@
     connectedCallback() {
       if (!this._built) this._build();
       this._startTimers();
+      this._syncTemplates();
       document.addEventListener("click", this._onDocClick);
     }
 
     disconnectedCallback() {
       this._stopTimers();
+      this._clearTemplates();
       document.removeEventListener("click", this._onDocClick);
     }
 
@@ -635,6 +735,97 @@
       this._renderBadges();
     }
 
+    _cancelSub(entry) {
+      entry.cancelled = true;
+      if (entry.unsub && !entry.unsubbed) {
+        entry.unsubbed = true;
+        Promise.resolve(entry.unsub).then(function (fn) {
+          if (typeof fn === "function") fn();
+        }).catch(function () {});
+      }
+    }
+
+    _clearTemplates() {
+      var subs = this._tplSubs;
+      this._tplSubs = {};
+      var self = this;
+      Object.keys(subs).forEach(function (k) {
+        self._cancelSub(subs[k]);
+      });
+    }
+
+    _syncTemplates() {
+      var badges = Array.isArray(this._config.badges) ? this._config.badges : [];
+      var needed = {};
+      badges.forEach(function (raw) {
+        if (!raw || typeof raw !== "object") return;
+        var ent = raw.entity || "";
+        ["value", "name", "icon", "color", "unit", "badge_color"].forEach(function (field) {
+          if (isTemplate(raw[field])) {
+            needed[tplKey(raw[field], ent)] = { tpl: raw[field], entity: ent };
+          }
+        });
+        if (Array.isArray(raw.colors)) {
+          raw.colors.forEach(function (item) {
+            if (item && isTemplate(item.color)) {
+              needed[tplKey(item.color, ent)] = { tpl: item.color, entity: ent };
+            }
+          });
+        } else if (raw.colors && typeof raw.colors === "object") {
+          Object.keys(raw.colors).forEach(function (ck) {
+            if (isTemplate(raw.colors[ck])) {
+              needed[tplKey(raw.colors[ck], ent)] = { tpl: raw.colors[ck], entity: ent };
+            }
+          });
+        }
+      });
+
+      var subs = this._tplSubs;
+      var self = this;
+      Object.keys(subs).forEach(function (k) {
+        if (!needed[k]) {
+          self._cancelSub(subs[k]);
+          delete subs[k];
+        }
+      });
+
+      var conn = this._hass && this._hass.connection;
+      if (!conn || typeof conn.subscribeMessage !== "function") return;
+
+      Object.keys(needed).forEach(function (k) {
+        if (subs[k]) return;
+        var spec = needed[k];
+        var entry = { tpl: spec.tpl, entity: spec.entity, result: undefined, hasResult: false, cancelled: false, unsubbed: false, unsub: null };
+        subs[k] = entry;
+        var payload = { type: "render_template", template: spec.tpl };
+        if (spec.entity) payload.variables = { entity: spec.entity };
+        try {
+          entry.unsub = conn.subscribeMessage(function (msg) {
+            if (entry.cancelled) return;
+            entry.result = msg && msg.result !== undefined ? msg.result : "";
+            entry.hasResult = true;
+            if (self._built) self._renderBadges();
+          }, payload);
+          Promise.resolve(entry.unsub).then(function (fn) {
+            if (entry.cancelled && !entry.unsubbed && typeof fn === "function") {
+              entry.unsubbed = true;
+              fn();
+            }
+          }).catch(function () {});
+        } catch (e) {
+          // Ignore subscription errors
+        }
+      });
+    }
+
+    _resolveTpl(val, entity) {
+      if (!isTemplate(val)) return val;
+      var entry = this._tplSubs[tplKey(val, entity)];
+      if (entry && entry.hasResult) return entry.result;
+      var hasConn = !!(this._hass && this._hass.connection && typeof this._hass.connection.subscribeMessage === "function");
+      return hasConn ? undefined : val;
+    }
+
     _renderBadges() {
       var container = this._els.chips;
       var badges = Array.isArray(this._config.badges) ? this._config.badges : [];
@@ -648,6 +839,37 @@
       badges.forEach(function (raw) {
         var cfg = typeof raw === "string" ? { entity: raw } : Object.assign({}, raw);
         var st = cfg.entity && self._hass && self._hass.states ? self._hass.states[cfg.entity] : null;
+        var ent = cfg.entity || "";
+
+        var effCfg = Object.assign({}, cfg);
+        if (cfg.value !== undefined) {
+          var rv = self._resolveTpl(cfg.value, ent);
+          effCfg.value = rv === undefined ? "" : rv;
+        }
+        if (cfg.name !== undefined) {
+          var rn = self._resolveTpl(cfg.name, ent);
+          effCfg.name = rn === undefined ? "" : rn;
+        }
+        if (cfg.icon !== undefined) {
+          effCfg.icon = self._resolveTpl(cfg.icon, ent);
+        }
+        if (cfg.unit !== undefined) {
+          var ru = self._resolveTpl(cfg.unit, ent);
+          effCfg.unit = ru === undefined ? "" : ru;
+        }
+
+        var rawVal = effCfg.value !== undefined
+          ? effCfg.value
+          : (cfg.attribute && st && st.attributes ? st.attributes[cfg.attribute] : (st ? st.state : undefined));
+
+        var valueColor = matchValueColor(cfg.colors, rawVal, function (c) {
+          return self._resolveTpl(c, ent);
+        });
+        var baseColor = parseColor(self._resolveTpl(cfg.color, ent));
+        var resolvedColor = valueColor || baseColor;
+        var resolvedBadgeColor = parseColor(self._resolveTpl(cfg.badge_color, ent));
+        var tintPill = !!(valueColor || (cfg.color && isTemplate(cfg.color)));
+
         var chip = document.createElement("span");
         var unavail = !!(cfg.entity && (!st || st.state === "unavailable" || st.state === "unknown"));
         var active = isActiveState(st);
@@ -660,22 +882,28 @@
           chip.setAttribute("tabindex", "0");
         }
 
+        if (resolvedBadgeColor) {
+          chip.style.borderColor = "color-mix(in srgb, " + resolvedBadgeColor + " 60%, var(--border))";
+          chip.style.background = "color-mix(in srgb, " + resolvedBadgeColor + " 20%, color-mix(in srgb, var(--bg) 45%, transparent))";
+        } else if (tintPill && resolvedColor) {
+          chip.style.borderColor = "color-mix(in srgb, " + resolvedColor + " 55%, var(--border))";
+          chip.style.background = "color-mix(in srgb, " + resolvedColor + " 14%, color-mix(in srgb, var(--bg) 45%, transparent))";
+        }
+
         if (cfg.show_icon !== false) {
           var icoWrap = document.createElement("span");
           icoWrap.className = "c-ico";
-          if (cfg.color) {
-            icoWrap.style.color = Array.isArray(cfg.color)
-              ? "rgb(" + cfg.color[0] + "," + cfg.color[1] + "," + cfg.color[2] + ")"
-              : cfg.color;
+          if (resolvedColor) {
+            icoWrap.style.color = resolvedColor;
           }
           var haIcon = document.createElement("ha-icon");
-          haIcon.setAttribute("icon", pickIcon(cfg, st));
+          haIcon.setAttribute("icon", pickIcon(effCfg, st));
           icoWrap.appendChild(haIcon);
           chip.appendChild(icoWrap);
         }
 
         var showName = cfg.show_name !== false;
-        var label = cfg.name !== undefined ? cfg.name : (showName && st && st.attributes && st.attributes.friendly_name) || (showName && !st && cfg.entity ? cfg.entity : "");
+        var label = effCfg.name !== undefined ? effCfg.name : (showName && st && st.attributes && st.attributes.friendly_name) || (showName && !st && cfg.entity ? cfg.entity : "");
         if (showName && label) {
           var lbl = document.createElement("span");
           lbl.textContent = label;
@@ -684,7 +912,7 @@
 
         if (cfg.show_state !== false) {
           var val = document.createElement("b");
-          val.textContent = formatValue(cfg, st, T, self._hass);
+          val.textContent = formatValue(effCfg, st, T, self._hass);
           chip.appendChild(val);
         }
 
