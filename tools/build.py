@@ -15,7 +15,7 @@ PARTS = [
     "effetti.js",
     "lingua.js",
 ]
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 
 def bundle() -> str:
