@@ -4,7 +4,7 @@ A compact, animated Home Assistant Lovelace banner card forked from **Aurora Gla
 
 ![Aurora Glass Banner Card preview](assets/preview.png)
 
-## Features
+## Features From the Original Repo
 
 - **10 animated worlds** (`casetta`, `citta`, `montagna`, `mare`, `foresta`, `spazio`, `giappone`, `cyberpunk`, `natale`, `oceano` — English aliases like `house`, `city`, `mountain`, `sea`, `forest`, `space`, `japan`, `christmas`, `ocean` also supported) with continuous day-to-night sky, sun/moon arc, clouds, stars, and glowing windows at night.
 - **11 canvas weather & atmosphere effects** (`rain`, `storm`, `snow`, `fog`, `leaves`, `petals`, `fireflies`, `stars`, `fireworks`, `bubbles`, `confetti`, plus Italian keys), with `auto` mode driven by a `weather.*` entity.
