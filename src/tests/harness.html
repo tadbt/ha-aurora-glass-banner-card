@@ -3,22 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aurora Glass Banner Card — YAML Test Harness</title>
+<title>Aurora Glass Banner Card — Editable Test Harness</title>
 <style>
   html, body { margin: 0; min-height: 100%; background: #0b1020; font-family: system-ui, sans-serif; color: #e2e8f0; }
-  .wrap { max-width: 960px; margin: 28px auto; padding: 0 16px; display: grid; gap: 18px; }
-  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  button { padding: 7px 14px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; cursor: pointer; font-weight: 600; }
-  button:hover { border-color: #7c5cff; }
-  .yaml-box { display: grid; gap: 8px; }
-  .yaml-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #94a3b8; }
+  .wrap { max-width: 1040px; margin: 28px auto; padding: 0 16px 40px; display: grid; gap: 18px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button, select, input[type="text"] {
+    padding: 7px 12px; border-radius: 8px; border: 1px solid #334155;
+    background: #1e293b; color: #f8fafc; font: inherit; font-size: 13px;
+  }
+  button { cursor: pointer; font-weight: 600; }
+  button:hover, select:hover, input[type="text"]:hover { border-color: #7c5cff; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+  .panel {
+    display: grid; gap: 12px; padding: 16px; border-radius: 14px;
+    border: 1px solid #334155; background: #0f172a;
+  }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .field { display: grid; gap: 5px; font-size: 12px; color: #94a3b8; }
+  .field label { font-weight: 600; }
+  .checks { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+  .checks label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   textarea {
-    width: 100%; min-height: 260px; padding: 14px; border-radius: 14px;
-    border: 1px solid #334155; background: #0f172a; color: #e2e8f0;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5;
+    width: 100%; min-height: 260px; padding: 12px; border-radius: 10px;
+    border: 1px solid #334155; background: #090e1c; color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.5;
     box-sizing: border-box; resize: vertical;
   }
+  textarea.small { min-height: 92px; }
   .err { color: #fb7185; font-size: 13px; min-height: 18px; }
+  .mini-btns { display: flex; gap: 6px; }
+  .mini-btns button { padding: 4px 9px; font-size: 11.5px; }
 </style>
 </head>
 <body>
@@ -26,17 +42,62 @@
   <div class="bar">
     <button id="toggle-theme" type="button">Toggle Light/Dark</button>
     <button id="toggle-rain" type="button">Toggle Rain</button>
-    <button id="apply-yaml" type="button">Apply YAML</button>
+    <button id="toggle-light" type="button">Toggle Living Light</button>
+    <button id="toggle-door" type="button">Toggle Front Door</button>
+    <button id="toggle-motion" type="button">Toggle Motion</button>
   </div>
 
   <aurora-glass-banner-card id="card"></aurora-glass-banner-card>
 
-  <div class="yaml-box">
-    <div class="yaml-head">
-      <span>Home Assistant Card YAML</span>
-      <span>Edit and click <b>Apply YAML</b></span>
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-head">
+        <span>Visual Editor</span>
+        <span style="font-weight:500;text-transform:none;letter-spacing:0">Live-synced with YAML</span>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="ed-world">World</label>
+          <select id="ed-world"></select>
+        </div>
+        <div class="field">
+          <label for="ed-effect">Weather / Effect</label>
+          <select id="ed-effect"></select>
+        </div>
+        <div class="field">
+          <label for="ed-theme">Theme</label>
+          <select id="ed-theme">
+            <option value="auto">Auto</option>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ed-weather">Weather Entity</label>
+          <input id="ed-weather" type="text" placeholder="weather.home">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="ed-name">Name / Label</label>
+        <input id="ed-name" type="text" placeholder="Optional custom greeting/label">
+      </div>
+
+      <div class="checks">
+        <label><input id="ed-clock" type="checkbox"> Show clock</label>
+        <label><input id="ed-date" type="checkbox"> Show date</label>
+        <label><input id="ed-tag" type="checkbox"> Show world tag</label>
+        <label><input id="ed-24h" type="checkbox"> 24-hour clock</label>
+      </div>
     </div>
-    <textarea id="yaml-input" spellcheck="false">type: custom:aurora-glass-banner-card
+
+    <div class="panel">
+      <div class="panel-head">
+        <span>Home Assistant Card YAML</span>
+        <button id="apply-yaml" type="button">Apply YAML</button>
+      </div>
+      <textarea id="yaml-input" spellcheck="false">type: custom:aurora-glass-banner-card
 world: casetta
 effect: auto
 weather_entity: weather.home
@@ -57,18 +118,24 @@ badges:
   - entity: light.living_room
     tap_action:
       action: toggle</textarea>
-    <div class="err" id="yaml-err"></div>
+      <div class="err" id="yaml-err"></div>
+    </div>
   </div>
 </div>
 
 <script src="../../aurora-glass-banner-card.js"></script>
 <script>
-  // Minimal YAML parser for HA card config (supports maps, lists, booleans, numbers, strings)
+  // Minimal YAML parser for HA card config (supports maps, lists, block scalars |, booleans, numbers, strings)
   function parseYaml(src) {
-    var lines = src.replace(/\r\n/g, "\n").split("\n").map(function (raw, idx) {
+    var rawLines = src.replace(/\r\n/g, "\n").split("\n");
+    var lines = [];
+    for (var r = 0; r < rawLines.length; r++) {
+      var raw = rawLines[r];
       var clean = raw.replace(/\s+#.*$/, "");
-      return { indent: clean.search(/\S/), text: clean.trim(), line: idx + 1 };
-    }).filter(function (l) { return l.text && l.text[0] !== "#"; });
+      var trimmed = clean.trim();
+      if (!trimmed || trimmed[0] === "#") continue;
+      lines.push({ indent: clean.search(/\S/), text: trimmed, raw: raw, line: r + 1 });
+    }
 
     function scalar(v) {
       if (v === "true") return true;
@@ -96,8 +163,7 @@ badges:
             var obj = {};
             obj[k] = v ? scalar(v) : parseBlock(listIndent + 2);
             while (i < lines.length && lines[i].indent > listIndent) {
-              var sub = parseMapEntry(listIndent + 1);
-              Object.assign(obj, sub);
+              Object.assign(obj, parseMapEntry(listIndent + 1));
             }
             arr.push(obj);
           } else {
@@ -122,7 +188,16 @@ badges:
       var k = l.text.slice(0, ci).trim();
       var v = l.text.slice(ci + 1).trim();
       var out = {};
-      if (v) {
+      if (v === "|" || v === "|-") {
+        var block = [];
+        var baseIndent = -1;
+        while (i < lines.length && lines[i].indent > mapIndent) {
+          if (baseIndent < 0) baseIndent = lines[i].indent;
+          block.push(lines[i].raw.slice(baseIndent));
+          i++;
+        }
+        out[k] = block.join("\n");
+      } else if (v) {
         out[k] = scalar(v);
       } else if (i < lines.length && lines[i].indent > mapIndent) {
         out[k] = parseBlock(mapIndent + 1);
@@ -133,6 +208,51 @@ badges:
     }
 
     return parseBlock(0);
+  }
+
+  function toYaml(val, indent) {
+    indent = indent || 0;
+    var pad = " ".repeat(indent);
+    if (Array.isArray(val)) {
+      return val.map(function (item) {
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          var keys = Object.keys(item);
+          if (!keys.length) return pad + "- {}";
+          var first = keys[0];
+          var head = pad + "- " + formatPair(first, item[first], indent + 2);
+          var rest = keys.slice(1).map(function (k) {
+            return " ".repeat(indent + 2) + formatPair(k, item[k], indent + 2);
+          });
+          return [head].concat(rest).join("\n");
+        }
+        return pad + "- " + formatScalar(item);
+      }).join("\n");
+    }
+    if (val && typeof val === "object") {
+      return Object.keys(val).filter(function (k) { return val[k] !== undefined && val[k] !== ""; }).map(function (k) {
+        return pad + formatPair(k, val[k], indent);
+      }).join("\n");
+    }
+    return pad + formatScalar(val);
+  }
+
+  function formatScalar(v) {
+    if (typeof v === "boolean" || typeof v === "number") return String(v);
+    if (v === null) return "null";
+    var s = String(v);
+    if (/[:#\n]|^\s|\s$/.test(s)) return JSON.stringify(s);
+    return s;
+  }
+
+  function formatPair(k, v, indent) {
+    if (typeof v === "string" && v.indexOf("\n") >= 0) {
+      var pad = " ".repeat(indent + 2);
+      return k + ": |\n" + v.split("\n").map(function (ln) { return pad + ln; }).join("\n");
+    }
+    if (v && typeof v === "object") {
+      return k + ":\n" + toYaml(v, indent + 2);
+    }
+    return k + ": " + formatScalar(v);
   }
 
   function st(id, state, attrs) {
@@ -165,19 +285,92 @@ badges:
   var card = document.getElementById("card");
   var yamlInput = document.getElementById("yaml-input");
   var yamlErr = document.getElementById("yaml-err");
+  var els = {
+    world: document.getElementById("ed-world"),
+    effect: document.getElementById("ed-effect"),
+    theme: document.getElementById("ed-theme"),
+    weather: document.getElementById("ed-weather"),
+    name: document.getElementById("ed-name"),
+    clock: document.getElementById("ed-clock"),
+    date: document.getElementById("ed-date"),
+    tag: document.getElementById("ed-tag"),
+    h24: document.getElementById("ed-24h")
+  };
+
+  // Populate world and effect dropdowns from loaded card registries
+  Object.keys(window.AMB.W).forEach(function (id) {
+    var o = document.createElement("option");
+    o.value = id;
+    o.textContent = window.AMB.W[id].name + " (" + id + ")";
+    els.world.appendChild(o);
+  });
+  [{ id: "auto", name: "Auto (from weather)" }, { id: "none", name: "None" }].concat(
+    Object.keys(window.FX.E).map(function (id) { return { id: id, name: window.FX.E[id].name + " (" + id + ")" }; })
+  ).forEach(function (item) {
+    var o = document.createElement("option");
+    o.value = item.id;
+    o.textContent = item.name;
+    els.effect.appendChild(o);
+  });
+
+  var currentCfg = {};
+
+  function syncFormFromConfig(cfg) {
+    els.world.value = cfg.world || "casetta";
+    els.effect.value = cfg.effect || "auto";
+    els.theme.value = cfg.theme || "auto";
+    els.weather.value = cfg.weather_entity || "";
+    els.name.value = cfg.name || "";
+    els.clock.checked = cfg.show_clock !== false;
+    els.date.checked = cfg.show_date !== false;
+    els.tag.checked = cfg.show_world_tag !== false;
+    els.h24.checked = cfg.hour_24 !== false;
+  }
+
+  function applyConfig(cfg, updateYaml) {
+    currentCfg = cfg;
+    if (updateYaml) yamlInput.value = toYaml(cfg);
+    card.setConfig(cfg);
+    card.hass = hass;
+  }
 
   function applyYaml() {
     try {
       var cfg = parseYaml(yamlInput.value);
       yamlErr.textContent = "";
-      card.setConfig(cfg);
-      card.hass = hass;
+      syncFormFromConfig(cfg);
+      applyConfig(cfg, false);
     } catch (e) {
       yamlErr.textContent = e.message;
     }
   }
 
-  applyYaml();
+  function onFormChange() {
+    var next = Object.assign({}, currentCfg, {
+      world: els.world.value,
+      effect: els.effect.value,
+      theme: els.theme.value,
+      weather_entity: els.weather.value.trim() || undefined,
+      name: els.name.value.trim() || undefined,
+      show_clock: els.clock.checked,
+      show_date: els.date.checked,
+      show_world_tag: els.tag.checked,
+      hour_24: els.h24.checked
+    });
+    yamlErr.textContent = "";
+    applyConfig(next, true);
+  }
+
+  Object.keys(els).forEach(function (k) {
+    var ev = els[k].tagName === "INPUT" && els[k].type === "text" || els[k].tagName === "TEXTAREA" ? "input" : "change";
+    els[k].addEventListener(ev, onFormChange);
+  });
+
+  var yamlTimer = 0;
+  yamlInput.addEventListener("input", function () {
+    clearTimeout(yamlTimer);
+    yamlTimer = setTimeout(applyYaml, 200);
+  });
   document.getElementById("apply-yaml").addEventListener("click", applyYaml);
 
   document.getElementById("toggle-theme").addEventListener("click", function () {
@@ -188,10 +381,20 @@ badges:
     card.hass = hass;
   });
 
+  function toggleBinary(id) {
+    states[id].state = states[id].state === "on" ? "off" : "on";
+    card.hass = Object.assign({}, hass, { states: Object.assign({}, states) });
+  }
+
   document.getElementById("toggle-rain").addEventListener("click", function () {
     states["weather.home"].state = states["weather.home"].state === "rainy" ? "partlycloudy" : "rainy";
     card.hass = Object.assign({}, hass, { states: Object.assign({}, states) });
   });
+  document.getElementById("toggle-light").addEventListener("click", function () { toggleBinary("light.living_room"); });
+  document.getElementById("toggle-door").addEventListener("click", function () { toggleBinary("binary_sensor.front_door"); });
+  document.getElementById("toggle-motion").addEventListener("click", function () { toggleBinary("binary_sensor.living_motion"); });
+
+  applyYaml();
 </script>
 </body>
 </html>

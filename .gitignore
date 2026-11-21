@@ -9,3 +9,5 @@ docker/config/*.log*
 docker/config/tts/
 docker/config/deps/
 docker/config/image/
+docker/config/.cache/
+docker/config/.ha_run.lock

@@ -17,14 +17,54 @@
   function winDark(K, ws) { var c = mix('#0b1233', K.s2, K.dy * .55), s = ''; ws.forEach(function (w) { s += rect(w.x, w.y, w.w, w.h, c, 3, 'opacity=".85"'); }); return s; }
 
   /* ============================================================ CASETTA */
-  var WIN_CASA = [{ k: 'camera', x: 398, y: 162, w: 28, h: 20 }, { k: 'cameretta', x: 494, y: 162, w: 28, h: 20 }, { k: 'salotto', x: 398, y: 196, w: 34, h: 22 }, { k: 'cucina', x: 488, y: 196, w: 34, h: 22 }, { k: 'ingresso', x: 447, y: 190, w: 26, h: 36 }];
+  var WIN_CASA = [
+    { k: 'cameretta', x: 379, y: 169, w: 8, h: 14 },
+    { k: 'camera', x: 414, y: 173, w: 15, h: 30 },
+    { k: 'ingresso', x: 433, y: 173, w: 15, h: 30 },
+    { k: 'salotto', x: 490, y: 173, w: 15, h: 30 },
+    { k: 'cucina', x: 509, y: 173, w: 15, h: 30 }
+  ];
+  function winGrid(x, y, w, h, cols, rows, col) {
+    var s = '';
+    for (var c = 1; c < cols; c++) {
+      var lx = f(x + w * c / cols);
+      s += line('M' + lx + ' ' + f(y) + ' V' + f(y + h), col, .8);
+    }
+    for (var r = 1; r < rows; r++) {
+      var ly = f(y + h * r / rows);
+      s += line('M' + f(x) + ' ' + ly + ' H' + f(x + w), col, .8);
+    }
+    return s;
+  }
   W.casetta = { name: 'Casetta', icon: 'mdi-home-variant', desc: 'Sole, luna, nuvole e la tua casetta con le finestre che si accendono', windows: WIN_CASA, draw: function (K, h, B) {
-    var s = sky(K, B, { clouds: 3 }), dark = mix(K.hn, '#000', .34), roof = mix(K.hn, '#000', .45);
+    var s = sky(K, B, { clouds: 3 }), dark = mix(K.hn, '#000', .34);
+    var wall = mix(K.hn, '#1b2350', .25), backRoof = mix(K.hn, '#000', .45);
+    var trim = mix(K.hn, K.s3, .38), outline = mix(K.hn, '#000', .58);
+    var chim = mix(K.hn, '#000', .32);
     s += path('M-10 190 Q90 140 190 176 T380 160 T650 178 V260 H-10Z', K.hf) + path('M-10 232 Q120 200 270 220 T650 212 V260 H-10Z', K.hn);
     s += pine(312, 224, 50, dark, 0) + pine(601, 222, 54, dark, 1.5) + pine(622, 227, 36, dark, 3);
-    s += rect(441, 104, 16, 30, roof) + poly('366,154 460,98 554,154', roof) + rect(380, 150, 160, 76, mix(K.hn, '#1b2350', .25), 2) + circ(460, 128, 9, 'rgba(0,0,0,.35)');
-    s += winDark(K, WIN_CASA) + poly('447,226 473,226 502,260 418,260', 'rgba(255,255,255,.07)');
-    s += smoke(449, 100, K.cloud) + bird(60, 34, 0, 1) + bird(84, 46, 18, .8);
+    // back roof & brick chimney
+    s += poly('401,118 509,118 525,152 394,152', backRoof, 'stroke="' + outline + '" stroke-width=".8"');
+    s += rect(395, 106, 11, 42, chim, 0, 'stroke="' + outline + '" stroke-width=".8"');
+    for (var by = 112; by < 144; by += 6) s += line('M395 ' + by + ' H406', outline, .6);
+    // left wing
+    s += rect(371, 154, 25, 62, wall, 0, 'stroke="' + outline + '" stroke-width=".8"');
+    s += poly('366,156 394,148 395,153 367,160', trim, 'stroke="' + outline + '" stroke-width=".8"');
+    s += rect(377, 167, 12, 18, trim, 1, 'stroke="' + outline + '" stroke-width=".7"');
+    // main facade & asymmetric gable trim
+    s += poly('391,160 433,106 452,130 546,164 546,226 391,226', wall, 'stroke="' + outline + '" stroke-width=".8"');
+    s += poly('385,161 433,98 454,124 554,161 552,166 452,129 433,105 389,165', trim, 'stroke="' + outline + '" stroke-width=".8"');
+    // window frames & sills
+    s += rect(411, 170, 40, 36, trim, 1, 'stroke="' + outline + '" stroke-width=".8"') + rect(409, 206, 44, 3, trim, .5, 'stroke="' + outline + '" stroke-width=".7"');
+    s += rect(487, 170, 40, 36, trim, 1, 'stroke="' + outline + '" stroke-width=".8"') + rect(485, 206, 44, 3, trim, .5, 'stroke="' + outline + '" stroke-width=".7"');
+    // dark window panes + muntin grids
+    s += winDark(K, WIN_CASA);
+    s += winGrid(379, 169, 8, 7, 2, 1, outline) + line('M379 176 H387', outline, .9);
+    s += winGrid(414, 173, 15, 14, 3, 2, outline) + line('M414 187 H429', outline, 1);
+    s += winGrid(433, 173, 15, 14, 3, 2, outline) + line('M433 187 H448', outline, 1);
+    s += winGrid(490, 173, 15, 30, 3, 4, outline) + line('M490 188 H505', outline, 1.1);
+    s += winGrid(509, 173, 15, 30, 3, 4, outline) + line('M509 188 H524', outline, 1.1);
+    s += smoke(400, 103, K.cloud) + bird(60, 34, 0, 1) + bird(84, 46, 18, .8);
     return s;
   } };
 
