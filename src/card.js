@@ -120,7 +120,7 @@
     ".clock .colon { animation: blink 1s steps(1) infinite; }",
     ".clock .ampm { font-size: .32em; letter-spacing: .02em; margin-left: .18em; vertical-align: baseline; }",
     "@keyframes blink { 50% { opacity: .25; } }",
-    ".hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; flex: 1 1 240px; justify-content: flex-end; align-items: flex-end; }",
+    ".hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; flex: 1 1 240px; justify-content: flex-end; align-items: flex-end; padding-right: 160px; }",
     ".chip {",
     "  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px;",
     "  border-radius: 99px; font-size: .75rem; font-weight: 600; color: var(--dim);",
@@ -161,7 +161,7 @@
     "@container (max-width: 560px) {",
     "  .hero-art { height: auto; width: 100%; -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); mask-image: linear-gradient(180deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.85) 65%); }",
     "  .hero-body { flex-direction: column; align-items: flex-start; justify-content: flex-end; }",
-    "  .hero-chips { flex: 0 0 auto; width: 100%; justify-content: flex-start; }",
+    "  .hero-chips { flex: 0 0 auto; width: 100%; justify-content: flex-start; padding-right: 0; }",
     "  .hero-tag { top: 10px; right: 12px; padding: 4px 10px; font-size: .7rem; }",
     "  .pop { top: 44px; right: 12px; }",
     "}"
